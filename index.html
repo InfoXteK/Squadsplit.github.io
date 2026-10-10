@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>iFiNeX · Squad Split</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://lznnetxeklmdrykxtsbm.supabase.co; connect-src 'self' https://lznnetxeklmdrykxtsbm.supabase.co wss://lznnetxeklmdrykxtsbm.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://lznnetxeklmdrykxtsbm.supabase.co; connect-src 'self' https://lznnetxeklmdrykxtsbm.supabase.co wss://lznnetxeklmdrykxtsbm.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'">
 <meta name="referrer" content="no-referrer">
 <!-- v8.1 SECURITY: the page may only talk to its own origin + your Supabase project (https://lznnetxeklmdrykxtsbm.supabase.co); a script injected by an attacker can no longer send your session anywhere else. -->
 <meta name="theme-color" content="#0b0b18">
@@ -14,8 +14,17 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.9"></script>
+<link rel="stylesheet" href="ifinex-ui.css">
+<script src="vendor/supabase.js"></script>
+<script src="ifinex-session.js"></script>
 <script src="ifinex-alerts.js"></script>
+<script defer src="vendor/jspdf.umd.min.js"></script>
+<script defer src="vendor/jspdf.plugin.autotable.min.js"></script>
+<script defer src="vendor/xlsx.full.min.js"></script>
+<script defer src="ifinex-theme.js"></script>
+<script defer src="ifinex-tools.js"></script>
+<script defer src="ifinex-edit-plus.js"></script>
+<script defer src="ifinex-datasets-squad.js"></script>
 <style>
 :root {
   --bg:#0b0b18;--card:#13132a;--card2:#1a1a35;--border:#2a2a50;
@@ -271,7 +280,7 @@ html{max-width:100%;overflow-x:hidden;}body{max-width:100%;overflow-x:visible;}
 .ntf-row{padding:9px 8px;border-radius:10px;margin-bottom:4px;font-size:.78rem;cursor:pointer;}.ntf-row.unread{background:rgba(77,150,255,.14);}.ntf-row small{color:var(--muted);font-size:.64rem;}
 /* v8.0 iFiNeX branding */
 .login-logo .logo-img{width:84px;height:84px;display:block;margin:0 auto 6px;filter:drop-shadow(0 6px 18px rgba(77,150,255,.35));}
-.hd-logo{width:22px;height:22px;vertical-align:-4px;margin-right:4px;}
+.hd-logo{width:38px;height:38px;vertical-align:middle;margin-right:6px;border-radius:50%;}.hd-word{height:32px;width:auto;vertical-align:middle;border-radius:8px;}.hd-title h2{display:flex;align-items:center;}
 </style>
 </head>
 <body>
@@ -283,7 +292,7 @@ html{max-width:100%;overflow-x:hidden;}body{max-width:100%;overflow-x:visible;}
 <div id="screen-login" class="screen active">
   <div class="login-box">
     <div class="login-logo">
-      <img class="logo-img" src="assets/ifinex-emblem-192.png" alt="iFiNeX" width="84" height="84">
+      <img class="logo-img" src="assets/ifinex-emblem-192.png" alt="" width="104" height="104" style="width:104px;height:104px;border-radius:50%;"><img src="assets/ifinex-wordmark.png" alt="iFiNeX" style="width:230px;max-width:72%;display:block;margin:6px auto 0;border-radius:12px;">
       <h1>iFiNeX</h1>
       <p>Squad Split · track • split • settle with your crew  •  🇦🇪 AED</p>
       <p style='font-size:.65rem;color:#444466;margin-top:2px'>v8.2</p>
@@ -327,7 +336,7 @@ html{max-width:100%;overflow-x:hidden;}body{max-width:100%;overflow-x:visible;}
 <div id="screen-app" class="screen">
   <div class="app-header">
     <button class="hamb" onclick="openDrawer()" aria-label="Menu">☰</button>
-    <div class="hd-title"><h2><img class="hd-logo" src="assets/ifinex-emblem-192.png" alt="" width="22" height="22"> iFiNeX</h2><p id="header-sub">Loading...</p></div>
+    <div class="hd-title"><h2><img class="hd-logo" src="assets/ifinex-emblem-192.png" alt="" width="38" height="38"><img class="hd-word" src="assets/ifinex-wordmark.png" alt="iFiNeX" height="32"></h2><p id="header-sub">Loading...</p></div>
     <div class="header-right">
       <div class="notif-wrap"><button class="notif-bell" onclick="toggleNtf()" aria-label="Notifications">🔔<span class="notif-badge" id="ntf-badge"></span></button></div>
       <div class="user-pill" onclick="logout()" title="Tap to log out">
@@ -454,6 +463,7 @@ html{max-width:100%;overflow-x:hidden;}body{max-width:100%;overflow-x:visible;}
     <button class="nav-btn" onclick="showPage('add',this)"><span class="ni">➕</span>Add</button>
     <button class="nav-btn" onclick="showPage('balances',this)"><span class="ni">⚖️</span>Balances</button>
     <button class="nav-btn" onclick="showPage('settle',this)"><span class="ni">✅</span>Settle</button>
+    <button class="nav-btn" onclick="ifxXfer.open('sq_expenses')"><span class="ni">⇅</span>Excel</button>
   </div>
 </div>
 
@@ -535,12 +545,9 @@ let currentUser=null,selectedId=null,currentEmail='';
 async function applyMyAppearance(){
   try{
     const { data } = await sb.from('bill_user_prefs').select('*').ilike('user_email', currentEmail).maybeSingle();
-    if(data?.theme && data.theme!=='default') document.documentElement.setAttribute('data-theme', data.theme);
-    if(data?.bg_url){
-      document.documentElement.style.setProperty('--bg-photo-opacity', data.bg_opacity ?? 0.30);
-      const layer=document.getElementById('bg-photo-layer');
-      layer.style.backgroundImage=`url('${data.bg_url}')`; layer.classList.add('on');
-    }
+    if(data?.theme && data.theme!=='default') document.documentElement.setAttribute('data-theme', data.theme); else if(data) document.documentElement.removeAttribute('data-theme');
+    try{ localStorage.setItem('ifx_theme', (data&&data.theme)||'default'); }catch(e){}
+    if(data?.bg_url){ ifxBg.apply({url:data.bg_url,opacity:data.bg_opacity,zoom:data.bg_zoom,x:data.bg_x,y:data.bg_y}); }
   }catch(e){ /* appearance is cosmetic — never block the app over it */ }
 }
 let timerInterval=null;
@@ -572,7 +579,7 @@ window.onload=async()=>{
     // session started on either page is recognized on the other.
     try{
       sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{
-        auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storageKey:'squadsplit-auth-v1' }
+        auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storageKey:'squadsplit-auth-v1', storage:window.IFX_AUTH_STORAGE }
       });
       isDemoMode=false;
     }catch(e){isDemoMode=true;}
@@ -584,22 +591,24 @@ window.onload=async()=>{
   // The only real source of truth is a live, currently-valid Supabase
   // session, re-checked fresh against the database every single load.
   if(!isDemoMode&&sb){
-    const settled = await Promise.race([
-      sb.auth.getSession().then(r=>r.data.session),
-      new Promise(res=>{
-        const { data:sub } = sb.auth.onAuthStateChange((event,session)=>{
-          if(event==='INITIAL_SESSION'||event==='SIGNED_IN'){ sub.subscription.unsubscribe(); res(session); }
-        });
-        setTimeout(()=>res(undefined),3000);
-      })
-    ]);
-    const session = settled || (await sb.auth.getSession()).data.session;
-    if(session?.user?.email){
-      currentEmail=session.user.email.toLowerCase();
-      applyMyAppearance(); // read-only here — theme/background are set in Bill Tracker's 🎨 Appearance
-      await routeAfterLogin(true);
+    // v8.3 persistent login — see ifinex-session.js
+    ifxBootSplash('Restoring your session…');
+    const R = await ifxRestoreSession(sb);
+    if(R.session?.user?.email){
+      currentEmail=R.session.user.email.toLowerCase();
+      applyMyAppearance();
+      try{
+        const c=JSON.parse(localStorage.getItem('ifx_sqcache_'+currentEmail)||'null');
+        if(c && c.user && Array.isArray(c.members) && c.members.length && !IMPERSONATE_PARAM){
+          MEMBERS=c.members; currentUser=c.user; selectedId=c.user.id; window._fastEntered=true; ifxBootHide(); enterApp().catch(e=>console.warn('load',e)); routeAfterLogin(true).catch(e=>console.warn('refresh',e)); return;
+        }
+      }catch(e){ console.warn('fast path skipped',e); }
+      try{ await routeAfterLogin(true); ifxBootHide(); }
+      catch(e){ console.warn('Enter failed',e); ifxBootOffline(()=>location.reload(), e&&e.message); }
       return;
     }
+    if(R.offline){ ifxBootOffline(()=>location.reload(), R.error&&R.error.message); return; }
+    ifxBootHide();
     sessionStorage.removeItem('sq_user'); // no live session — any old cache is meaningless
     return;
   }
@@ -607,7 +616,7 @@ window.onload=async()=>{
   const s=sessionStorage.getItem('sq_user');
   if(s){currentUser=JSON.parse(s);await enterApp();}
  }catch(e){
-   console.error('Startup error:', e);
+   console.error('Startup error:', e); try{ ifxBootOffline(()=>location.reload(), e&&e.message); }catch(x){}
  }
 };
 
@@ -727,7 +736,8 @@ async function routeAfterLogin(silent){
     if(delegateCheck){ routeEmail = IMPERSONATE_PARAM.toLowerCase(); viewingAsDelegate = delegateCheck.name; }
   }
   const{data,error}=await sb.from('app_users').select('*').ilike('email',escLike(routeEmail)).maybeSingle();
-  if(error||!data){
+  if(error) throw error;   // v8.3: a failed lookup (network) must not look like "not registered"
+  if(!data){
     // Not registered under their own email — but they might still have
     // delegate access to someone else's account. Don't dead-end on "not
     // added yet" when Bill Tracker's picker can actually get them in.
@@ -768,6 +778,8 @@ function finishLogin(){
   currentUser={...m};
   if(window._viewingAsDelegate) currentUser._delegatedLabel = window._viewingAsDelegate;
   sessionStorage.setItem('sq_user',JSON.stringify(currentUser));
+  try{ localStorage.setItem('ifx_sqcache_'+currentEmail, JSON.stringify({user:currentUser,members:MEMBERS})); }catch(e){}
+  if(window._fastEntered){ window._fastEntered=false; return; }   // v8.4: app already open from cache — cache refreshed, nothing more to do
   clearInterval(timerInterval);enterApp();
 }
 
@@ -855,6 +867,7 @@ async function logout(){
   if(!confirm('Log out?'))return;
   try{ if(typeof ifxAlertsDisable==='function') await ifxAlertsDisable(true,true); }catch(e){}
   try{ if(sb) await sb.auth.signOut(); }catch(e){ console.warn('signOut',e); }
+  try{ Object.keys(localStorage).filter(k=>k.indexOf('ifx_sqcache_')===0).forEach(k=>localStorage.removeItem(k)); }catch(e){}
   sessionStorage.removeItem('sq_user');currentUser=null;
   document.getElementById('screen-app').classList.remove('active');
   document.getElementById('screen-login').classList.add('active');
@@ -1055,7 +1068,7 @@ function expCard(e){
   const snames=e.split_between.map(id=>MEMBERS.find(m=>m.id===id)?.name).filter(Boolean);
   const share=(e.amount/e.split_between.length).toFixed(0);
   const canEdit=currentUser?.isAdmin;
-  return`<div class="exp-item-card">
+  return`<div class="exp-item-card" data-ifx-k="x${esc(e.id)}" data-ifx-amt="${esc(e.amount)}" data-ifx-label="${esc(e.name)}" data-ifx-date="${esc(e.date)}">
     <div style="font-size:1.5rem;margin-right:10px">${esc(CAT_ICONS[e.category])||'📦'}</div>
     <div style="flex:1">
       <div class="exp-name">${esc(e.name)}</div>
@@ -1175,7 +1188,7 @@ function renderSettlements(){
   if(!monthSetts.length){el2.innerHTML=`<div style="color:var(--muted);font-size:.82rem;text-align:center;padding:12px">No settlements recorded this month</div>`;return;}
   el2.innerHTML=monthSetts.map(s=>{
     const f=MEMBERS.find(m=>m.id===s.from_member),t=MEMBERS.find(m=>m.id===s.to_member);
-    return`<div class="balance-row owes" style="border-color:var(--green)">
+    return`<div class="balance-row owes" data-ifx-k="s${esc(s.id)}" data-ifx-amt="${esc(s.amount)}" data-ifx-label="${esc((f?.name||'')+' → '+(t?.name||''))}" data-ifx-date="${esc(s.month)}" style="border-color:var(--green)">
       <div class="b-left"><div style="font-size:1.2rem">✅</div>
       <div><div class="b-name">${esc(f?.emoji)} ${esc(f?.name)} paid ${esc(t?.emoji)} ${esc(t?.name)}</div>
       <div class="b-sub">${esc(new Date(s.created_at||Date.now()).toLocaleDateString())}</div></div></div>
@@ -1243,7 +1256,7 @@ function renderPrevBals(){
   if(!prevBals.length){el.innerHTML=`<div style="color:var(--muted);font-size:.82rem;text-align:center;padding:16px">No previous balances</div>`;return;}
   el.innerHTML=prevBals.map(b=>{
     const f=MEMBERS.find(m=>m.id===b.from_member),t=MEMBERS.find(m=>m.id===b.to_member);
-    return`<div class="balance-row owes">
+    return`<div class="balance-row owes" data-ifx-k="pv${esc(b.id)}" data-ifx-amt="${esc(b.amount)}" data-ifx-label="${esc((f?.name||'')+' → '+(t?.name||''))}" data-ifx-date="${esc(b.month)}">
       <div class="b-left"><div style="font-size:1.2rem">${esc(f?.emoji)}</div>
       <div><div class="b-name">${esc(f?.name)} → ${esc(t?.name)}</div><div class="b-sub">Month: ${esc(b.month)}</div></div></div>
       <div><div class="b-amt neg"><span class="dhs"><svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg"><path d="M5,5 L5,115 L45,115 C80,115 100,90 100,60 C100,30 80,5 45,5 Z M20,20 L43,20 C68,20 82,35 82,60 C82,85 68,100 43,100 L20,100 Z"/><rect x="0" y="42" width="72" height="10" rx="2"/><rect x="0" y="62" width="72" height="10" rx="2"/></svg></span>${esc(b.amount)}</div>
@@ -1503,6 +1516,7 @@ setInterval(loadNtf,30000); setTimeout(loadNtf,3000);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden) loadNtf(); });
 
 function showPage(name,navEl){
+  try{ ifxSel.clear(); }catch(e){}
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');

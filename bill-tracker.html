@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>iFiNeX · Bill Tracker</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://lznnetxeklmdrykxtsbm.supabase.co; connect-src 'self' https://lznnetxeklmdrykxtsbm.supabase.co wss://lznnetxeklmdrykxtsbm.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://lznnetxeklmdrykxtsbm.supabase.co; connect-src 'self' https://lznnetxeklmdrykxtsbm.supabase.co wss://lznnetxeklmdrykxtsbm.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'">
 <meta name="referrer" content="no-referrer">
 <!-- v8.1 SECURITY: the page may only talk to its own origin + your Supabase project (https://lznnetxeklmdrykxtsbm.supabase.co); a script injected by an attacker can no longer send your session anywhere else. -->
 <meta name="theme-color" content="#0b0b18">
@@ -14,14 +14,22 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.9"></script>
+<link rel="stylesheet" href="ifinex-ui.css">
+<script src="vendor/supabase.js"></script>
+<script src="ifinex-session.js"></script>
 <script src="ifinex-alerts.js"></script>
 <!-- v7.3: report export libraries. Both are optional at runtime — the
      in-portal report never depends on them, only the ⬇️ PDF / ⬇️ Excel
      buttons do (see exportReportPDF/exportReportExcel's own checks). -->
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf-autotable.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script defer src="vendor/jspdf.umd.min.js"></script>
+<script defer src="vendor/jspdf.plugin.autotable.min.js"></script>
+<script defer src="vendor/xlsx.full.min.js"></script>
+<script defer src="ifinex-theme.js"></script>
+<script defer src="ifinex-tools.js"></script>
+<script defer src="ifinex-edit-plus.js"></script>
+<script defer src="ifinex-datasets.js"></script>
+<script defer src="ifinex-budget.js"></script>
+<script defer src="ifinex-et-plus.js"></script>
 <style>
 :root {
   --bg:#0b0b18;--card:#13132a;--card2:#1a1a35;--border:#2a2a50;
@@ -353,7 +361,13 @@ html{max-width:100%;overflow-x:hidden;}body{max-width:100%;overflow-x:visible;}
 .modal-actions .btn{flex:1;}
 /* v8.0 iFiNeX branding */
 .login-logo .logo-img{width:84px;height:84px;display:block;margin:0 auto 6px;filter:drop-shadow(0 6px 18px rgba(77,150,255,.35));}
-.hd-logo{width:22px;height:22px;vertical-align:-4px;margin-right:4px;}
+#page-hub{padding-bottom:110px;}.hub-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding-bottom:10px;}
+.hub-tile{position:relative;border-radius:18px;overflow:hidden;border:1.5px solid var(--hc,#4D96FF);background:var(--card);cursor:pointer;box-shadow:0 0 18px -6px var(--hc,#4D96FF);text-align:left;padding:0;color:var(--text);}
+.hub-tile img{width:100%;height:104px;object-fit:cover;display:block;}
+.hub-tile .hl{display:flex;align-items:center;gap:7px;padding:9px 10px;font-weight:900;font-size:.76rem;line-height:1.15;}
+.hub-tile .hl i{font-style:normal;font-size:1.05rem;}
+.hub-tile small{display:block;font-weight:600;font-size:.62rem;color:var(--muted);}
+.hd-logo{width:38px;height:38px;vertical-align:middle;margin-right:6px;border-radius:50%;cursor:pointer;}.hd-word{height:32px;width:auto;vertical-align:middle;border-radius:8px;cursor:pointer;}.hd-title h2{display:flex;align-items:center;}
 </style>
 </head>
 <body>
@@ -364,9 +378,9 @@ html{max-width:100%;overflow-x:hidden;}body{max-width:100%;overflow-x:visible;}
 <div class="screen active" id="screen-login">
   <div class="login-box">
     <div class="login-logo">
-      <img class="logo-img" src="assets/ifinex-emblem-192.png" alt="iFiNeX" width="84" height="84">
-      <h1>iFiNeX</h1>
-      <p>Bill Tracker · bills · payments · cards · who owes who · 🇦🇪 AED</p>
+      <img class="logo-img" src="assets/ifinex-emblem-192.png" alt="" width="104" height="104" style="width:104px;height:104px;border-radius:50%;">
+      <img src="assets/ifinex-wordmark.png" alt="iFiNeX" style="width:230px;max-width:72%;display:block;margin:6px auto 0;border-radius:12px;"><h1 style="position:absolute;left:-9999px;">iFiNeX</h1>
+      <p>Plan · Track · Save · Grow<br><small style="opacity:.7">web v8.4 · app v2.0</small></p>
     </div>
 
     <div class="error-msg" id="login-error"></div>
@@ -411,7 +425,7 @@ html{max-width:100%;overflow-x:hidden;}body{max-width:100%;overflow-x:visible;}
 <div class="screen" id="screen-app">
   <div class="app-header">
     <button class="hamb" onclick="openDrawer()" aria-label="Menu">☰</button>
-    <div class="hd-title"><h2><img class="hd-logo" src="assets/ifinex-emblem-192.png" alt="" width="22" height="22"> iFiNeX</h2><p id="header-sub">Your private dashboard</p></div>
+    <div class="hd-title"><h2><img class="hd-logo" src="assets/ifinex-emblem-192.png" alt="" width="38" height="38" onclick="switchPage('hub')"><img class="hd-word" src="assets/ifinex-wordmark.png" alt="iFiNeX" height="32" onclick="switchPage('hub')"></h2><p id="header-sub">Your private dashboard</p></div>
     <div class="header-right">
       <div class="notif-wrap">
         <button class="notif-bell" onclick="toggleNotifPanel()" title="Notifications">🔔<span class="notif-badge" id="notif-badge"></span></button>
@@ -438,18 +452,25 @@ html{max-width:100%;overflow-x:hidden;}body{max-width:100%;overflow-x:visible;}
   <aside class="drawer" id="drawer">
     <div class="drawer-head">Menu <button onclick="closeDrawer()">✕</button></div>
     <div class="drawer-sec">Modules</div>
+    <button class="drawer-item" onclick="goModule('hub')">🧭 iFiNeX Hub</button>
     <button class="drawer-item" onclick="goModule('home')">🏠 Bill Tracker</button>
     <button class="drawer-item" onclick="goModule('et')">🧾 Expense Tracker</button>
     <button class="drawer-item" onclick="goModule('plans')">📅 EPP &amp; Gold Plans</button>
     <a class="drawer-item" id="link-to-squad" href="index.html" style="display:none;">💸 Squad Split</a>
     <div class="drawer-sec">Settings</div>
+    <button class="drawer-item" onclick="closeDrawer();ifxXfer.open()">⇅ Import / Export (Excel &amp; PDF)</button>
     <button class="drawer-item" onclick="closeDrawer();openAppearance()">🎨 Theme &amp; background</button>
     <button class="drawer-item" onclick="closeDrawer();openAlerts()">🔔 Alerts &amp; notifications</button>
     <button class="drawer-item" id="btn-open-admin" style="display:none;" onclick="closeDrawer();openAdmin()">⚙️ Admin</button>
     <button class="drawer-item" onclick="closeDrawer();logout()">🚪 Log out</button>
+    <div style="font-size:.64rem;color:var(--muted);text-align:center;padding:10px;">iFiNeX web v8.4 · app v2.0</div>
   </aside>
 
   <!-- HOME -->
+  <div class="page" id="page-hub">
+    <div style="text-align:center;margin:4px 0 14px;"><img src="assets/ifinex-emblem-192.png" alt="" width="84" height="84" style="border-radius:50%;filter:drop-shadow(0 6px 18px rgba(77,150,255,.45));"><img src="assets/ifinex-wordmark.png" alt="iFiNeX" style="display:block;margin:6px auto 0;width:210px;max-width:70%;border-radius:12px;"><div style="font-size:.78rem;color:var(--muted);margin-top:6px;letter-spacing:.14em;">PLAN · TRACK · SAVE · GROW</div></div>
+    <div class="hub-grid" id="hub-grid"></div>
+  </div>
   <div class="page active" id="page-home">
     <div id="tracker-banner"></div>
     <div id="push-banner"></div>
@@ -956,12 +977,8 @@ html{max-width:100%;overflow-x:hidden;}body{max-width:100%;overflow-x:visible;}
     <label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:4px;">Theme</label>
     <div class="theme-row" id="theme-swatches"></div>
     <label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:6px;">Background photo (optional)</label>
-    <div id="bg-preview" style="height:70px;border-radius:12px;background:var(--card2);border:1px solid var(--border);margin-bottom:10px;background-size:cover;background-position:center;"></div>
-    <input type="file" id="bg-file-input" accept="image/*" onchange="uploadBackground(event)" style="font-size:.75rem;margin-bottom:8px;">
-    <div id="bg-opacity-row" style="display:none;margin:8px 0;">
-      <label style="font-size:.72rem;color:var(--muted);">How strong (so text stays readable)</label>
-      <input type="range" id="bg-opacity" min="10" max="70" value="30" oninput="previewBgOpacity(this.value)" onchange="persistBgOpacity(this.value)" style="width:100%;">
-    </div>
+    <div id="bg-editor"></div>
+    <input type="file" id="bg-file-input" accept="image/*" onchange="uploadBackground(event)" style="font-size:.75rem;margin:10px 0 8px;">
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="removeBackground()">Remove photo</button>
       <button class="btn btn-primary" onclick="closeAppearance()">Done</button>
@@ -1085,7 +1102,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 // custom storageKey makes that sharing intentional/explicit rather than
 // relying on both files independently computing the same default.
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'squadsplit-auth-v1' }
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'squadsplit-auth-v1', storage: window.IFX_AUTH_STORAGE }
 });
 const CAT_ICONS = {food:'🍔',transport:'🚗',shopping:'🛍️',bills:'🧾',entertainment:'🎬',health:'💊',other:'📦'};
 const CARD_COLORS = ['#4d96ff','#ff6b6b','#ff92d0','#ffd93d','#6bcb77','#b06aff','#ff922b','#4dd0e1'];
@@ -1154,30 +1171,29 @@ window.onload = async () => {
     buildOTPBoxes();
     registerServiceWorker(); // registration only — no permission prompt yet, that's a deliberate user action
 
-    // Same login as Squad Split — if there's already a verified session
-    // (from either page), skip straight in instead of asking for OTP again.
-    // We check both getSession() (fast, cached) AND wait briefly on
-    // onAuthStateChange's initial event, which is the more reliable signal
-    // that supabase-js has fully finished reading localStorage — belt and
-    // braces against the "refresh sometimes shows login" class of bug.
-    const settled = await Promise.race([
-      sb.auth.getSession().then(r=>r.data.session),
-      new Promise(res=>{
-        const { data:sub } = sb.auth.onAuthStateChange((event, session)=>{
-          if(event==='INITIAL_SESSION' || event==='SIGNED_IN'){ sub.subscription.unsubscribe(); res(session); }
-        });
-        setTimeout(()=>res(undefined), 3000); // never hang forever offline
-      })
-    ]);
-    const session = settled || (await sb.auth.getSession()).data.session;
-    if (session?.user?.email) {
-      currentEmail = session.user.email.toLowerCase();
+    // v8.3 persistent login: restore the stored session (3 storage places, retries, never falls back to the login form
+    // because of a slow network). The login form only appears when there is genuinely no session.
+    ifxBootSplash('Restoring your session…');
+    const R = await ifxRestoreSession(sb);
+    if (R.session?.user?.email) {
+      currentEmail = R.session.user.email.toLowerCase();
       sessionStorage.setItem('bt_email', currentEmail);
-      await tryEnter();
-    }
+      // v8.4 FAST PATH: a cached profile + remembered account = open the app instantly, refresh in the background
+      try{
+        const c = JSON.parse(ifxKeep.get('prof_'+currentEmail)||'null'), rem = getRememberedManaging();
+        if(c && c.me && Array.isArray(c.options) && c.options.length){
+          const pick = c.options.find(o=>rem && o.email.toLowerCase()===rem.toLowerCase()) || (c.options.length===1 ? c.options[0] : null);
+          if(pick){ window._accountOptions=c.options; me=c.me; iAmAdminDelegate=!!c.iAmAdminDelegate; managing=pick; enterApp(); tryEnter(true).catch(e=>console.warn('profile refresh',e)); return; }
+        }
+      }catch(e){ console.warn('fast path skipped', e); }
+      try { await tryEnter(); ifxBootHide(); }
+      catch(e){ console.warn('Enter failed', e); ifxBootOffline(()=>location.reload(), e && e.message); }
+    } else if (R.offline) {
+      ifxBootOffline(()=>location.reload(), R.error && R.error.message);
+    } else { ifxBootHide(); }
   }catch(e){
     console.error('Startup error:', e);
-    showErr('login-error','Something went wrong loading your session — please log in again.');
+    ifxBootOffline(()=>location.reload(), e && e.message);
   }
 };
 
@@ -1229,14 +1245,16 @@ function backToEmail(){
   document.getElementById('step-email').classList.add('active');
   clearInterval(timerInterval);
 }
-async function tryEnter(){
+async function tryEnter(silent){
   const [ownRes, delRes] = await Promise.all([
     sb.from('app_users').select('*').ilike('email', escLike(currentEmail)).maybeSingle(),
     sb.from('app_users').select('*').ilike('delegate_email', escLike(currentEmail))
   ]);
+  if(ownRes.error || delRes.error) throw (ownRes.error || delRes.error);   // v8.3: a failed lookup is NOT "not registered"
   const own = ownRes.data || null;
   const delegated = delRes.data || [];
   if(!own && delegated.length===0){
+    if(silent){ ifxKeep.del('prof_'+currentEmail); document.getElementById('screen-app').classList.remove('active'); document.getElementById('screen-login').classList.add('active'); }
     document.getElementById('step-otp').classList.remove('active');
     document.getElementById('step-not-registered').classList.add('active');
     return;
@@ -1252,6 +1270,8 @@ async function tryEnter(){
   // v7.2: does this login stand in for an admin anywhere? `delegated` already
   // holds every account this email is delegate_email for — no extra query.
   iAmAdminDelegate = delegated.some(d => d.is_admin === true);
+  try{ ifxKeep.set('prof_'+currentEmail, JSON.stringify({me, options, iAmAdminDelegate})); }catch(e){}   // v8.4: lets the next open skip the network wait
+  if(silent) return;   // background refresh of the cached profile: the app is already open
 
   if(delegated.length===0){
     managing = own;
@@ -1279,9 +1299,9 @@ async function tryEnter(){
 // Persisted per-login-email so switching who's logged in (a different
 // email entirely) never accidentally carries over a stale "managing"
 // choice from someone else's session on the same device.
-function rememberManaging(email){ sessionStorage.setItem('bt_managing_'+currentEmail, email.toLowerCase()); }
-function getRememberedManaging(){ return sessionStorage.getItem('bt_managing_'+currentEmail); }
-function forgetManaging(){ sessionStorage.removeItem('bt_managing_'+currentEmail); }
+function rememberManaging(email){ ifxKeep.set('bt_managing_'+currentEmail, email.toLowerCase()); }
+function getRememberedManaging(){ return ifxKeep.get('bt_managing_'+currentEmail); }
+function forgetManaging(){ ifxKeep.del('bt_managing_'+currentEmail); }
 function renderAccountList(containerId, onPick){
   const list = document.getElementById(containerId);
   list.innerHTML = window._accountOptions.map((o,i)=>`
@@ -1344,6 +1364,8 @@ async function logout(){
   unsubscribeNotifRealtime();
   try{ await ifxAlertsDisable(true, true); }catch(e){}   // v8.0: forget this phone's alert secret BEFORE the session is destroyed (keepWant: returns for the same person)
   await sb.auth.signOut();
+  try{ Object.keys(localStorage).filter(k=>k.indexOf('ifx_prof_')===0).forEach(k=>localStorage.removeItem(k)); }catch(e){}
+  ifxKeep.clearAll(); try{ ifxBudget.reset(); }catch(e){}
   sessionStorage.removeItem('bt_email');
   location.reload();
 }
@@ -1353,10 +1375,12 @@ async function enterApp(){
   document.getElementById('screen-login').classList.remove('active');
   document.getElementById('screen-app').classList.add('active');
   if(me.is_admin) document.getElementById('btn-open-admin').style.display='inline-block';
+  try{ ifxBootHide(); }catch(e){}
   loadAppearance(); // tied to me.email — runs once per login, not per account switch
   nativeRequestNotifPermission(); // once per login, native app only — no-op on the web build
   ifxAlertsResume(); // v8.0: bring native background alerts back for this person (no-op on web / iPhone)
-  await refreshManagingUI();
+  switchPage('hub');   // v8.4: show the hub at once; data fills in behind it
+  refreshManagingUI().catch(e=>console.warn('data load',e));
 }
 
 // Everything that depends on WHICH account is being managed — split out
@@ -1404,19 +1428,28 @@ const THEMES = [
   { id:'noise-dark',  label:'Noise',       c1:'#0e0e12', c2:'#b06aff' },
   { id:'sandstone',   label:'Sandstone',   c1:'#2a1d14', c2:'#ffb066' },
   { id:'custom-photo',label:'Your Photo',  c1:'#0c0c16', c2:'#f5f5ff' },
+  // v8.4 design styles
+  { id:'st-flat',    label:'Flat',            c1:'#eef1f6', c2:'#2f7cf6' },
+  { id:'st-material',label:'Material',        c1:'#fef7ff', c2:'#6750a4' },
+  { id:'st-soft',    label:'Soft UI',         c1:'#e4e9f1', c2:'#7c6ff0' },
+  { id:'st-glass',   label:'Glass',           c1:'#4a2a9c', c2:'#ff7ad9' },
+  { id:'st-clay',    label:'Clay',            c1:'#fdeeff', c2:'#ff8fb8' },
+  { id:'st-skeu',    label:'Skeuomorphic',    c1:'#3b2a1d', c2:'#e0a93d' },
+  { id:'st-brutal',  label:'Neo-Brutalism',   c1:'#fff7d6', c2:'#ff5c8a' },
+  { id:'st-fluent',  label:'Fluent',          c1:'#1c1c1f', c2:'#0078d4' },
+  { id:'st-oled',    label:'OLED Black',      c1:'#000000', c2:'#3b82f6' },
+  { id:'st-cyber',   label:'Cyberpunk',       c1:'#07040f', c2:'#ff2bd6' },
+  { id:'st-minimal', label:'Minimal',         c1:'#ffffff', c2:'#111111' },
+  { id:'st-bento',   label:'Bento',           c1:'#0e1014', c2:'#7c8cff' },
 ];
-let myAppearance = { theme:'default', bg_url:null, bg_opacity:0.30 };
+let myAppearance = { theme:'default', bg_url:null, bg_opacity:0.30, bg_zoom:100, bg_x:50, bg_y:50 };
 
 function applyTheme(themeId){
+  try{ ifxKeep.set('theme', themeId||'default'); }catch(e){}
   if(themeId && themeId!=='default') document.documentElement.setAttribute('data-theme', themeId);
   else document.documentElement.removeAttribute('data-theme');
 }
-function applyBackground(url, opacity){
-  const layer = document.getElementById('bg-photo-layer');
-  document.documentElement.style.setProperty('--bg-photo-opacity', opacity ?? 0.30);
-  if(url){ layer.style.backgroundImage = `url('${url}')`; layer.classList.add('on'); }
-  else { layer.style.backgroundImage=''; layer.classList.remove('on'); }
-}
+function applyBackground(url, opacity){ ifxBg.apply({ url, opacity, zoom:myAppearance.bg_zoom, x:myAppearance.bg_x, y:myAppearance.bg_y }); }
 function renderThemeSwatches(){
   document.getElementById('theme-swatches').innerHTML = THEMES.map(t=>`
     <div class="theme-opt ${myAppearance.theme===t.id?'active':''}" onclick="selectTheme('${esc(jsq(t.id))}')">
@@ -1428,13 +1461,17 @@ function renderThemeSwatches(){
 }
 async function loadAppearance(){
   const { data } = await sb.from('bill_user_prefs').select('*').ilike('user_email', me.email).maybeSingle();
-  myAppearance = data ? { theme:data.theme||'default', bg_url:data.bg_url||null, bg_opacity:data.bg_opacity??0.30 } : { theme:'default', bg_url:null, bg_opacity:0.30 };
+  myAppearance = data ? { theme:data.theme||'default', bg_url:data.bg_url||null, bg_opacity:data.bg_opacity??0.30, bg_zoom:data.bg_zoom??100, bg_x:data.bg_x??50, bg_y:data.bg_y??50 } : { theme:'default', bg_url:null, bg_opacity:0.30, bg_zoom:100, bg_x:50, bg_y:50 };
   applyTheme(myAppearance.theme);
   applyBackground(myAppearance.bg_url, myAppearance.bg_opacity);
 }
+let _saveAppT=null;
 async function saveAppearance(){
-  await sb.from('bill_user_prefs').upsert({ user_email: me.email.toLowerCase(), theme: myAppearance.theme, bg_url: myAppearance.bg_url, bg_opacity: myAppearance.bg_opacity }, { onConflict:'user_email' });
+  const a=myAppearance;
+  const { error } = await sb.from('bill_user_prefs').upsert({ user_email: me.email.toLowerCase(), theme:a.theme, bg_url:a.bg_url, bg_opacity:Math.min(0.9,Math.max(0.05,a.bg_opacity)), bg_zoom:Math.min(400,Math.max(40,a.bg_zoom)), bg_x:Math.min(100,Math.max(0,a.bg_x)), bg_y:Math.min(100,Math.max(0,a.bg_y)) }, { onConflict:'user_email' });
+  if(error) toast('Could not save appearance');
 }
+function saveAppearanceSoon(){ clearTimeout(_saveAppT); _saveAppT=setTimeout(saveAppearance,500); }
 async function selectTheme(themeId){
   myAppearance.theme = themeId;
   applyTheme(themeId);
@@ -1442,38 +1479,40 @@ async function selectTheme(themeId){
   await saveAppearance();
   if(themeId==='custom-photo' && !myAppearance.bg_url) toast('Now add your own photo below ↓');
 }
+function mountBgEditor(){
+  ifxBgEditor.mount(document.getElementById('bg-editor'), {
+    get:()=>({ url:myAppearance.bg_url, opacity:myAppearance.bg_opacity, zoom:myAppearance.bg_zoom, x:myAppearance.bg_x, y:myAppearance.bg_y }),
+    set:(p,persist)=>{ myAppearance.bg_opacity=p.opacity; myAppearance.bg_zoom=p.zoom; myAppearance.bg_x=p.x; myAppearance.bg_y=p.y; if(persist) saveAppearanceSoon(); }
+  });
+}
 function openAppearance(){
-  renderThemeSwatches();
-  const preview = document.getElementById('bg-preview');
-  preview.style.backgroundImage = myAppearance.bg_url ? `url('${myAppearance.bg_url}')` : '';
-  document.getElementById('bg-opacity-row').style.display = myAppearance.bg_url ? 'block' : 'none';
-  document.getElementById('bg-opacity').value = Math.round((myAppearance.bg_opacity??0.30)*100);
+  renderThemeSwatches(); mountBgEditor();
   document.getElementById('appearance-modal').classList.add('open');
 }
 function closeAppearance(){ document.getElementById('appearance-modal').classList.remove('open'); }
-function previewBgOpacity(v){ document.documentElement.style.setProperty('--bg-photo-opacity', v/100); }
-async function persistBgOpacity(v){ myAppearance.bg_opacity = v/100; await saveAppearance(); }
 async function uploadBackground(evt){
   const file = evt.target.files[0];
   if(!file) return;
-  if(file.size > 5*1024*1024){ toast('Please choose an image under 5MB'); return; }
-  toast('Uploading…');
-  const path = `${me.email.toLowerCase()}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g,'_')}`;
-  const { error: upErr } = await sb.storage.from('user-backgrounds').upload(path, file, { upsert:true, cacheControl:'3600' });
+  if(!/^image\//.test(file.type)){ toast('Please choose an image file'); return; }
+  if(file.size > 25*1024*1024){ toast('That photo is too large (max 25 MB before shrinking)'); return; }
+  toast('Preparing photo…');
+  const prep = await ifxPrepPhoto(file);
+  if(prep.blob.size > 5*1024*1024){ toast('Still over 5 MB after shrinking — pick a simpler image'); return; }
+  const ext = ['jpg','jpeg','png','webp','gif'].includes(prep.ext) ? prep.ext : 'jpg';
+  const path = `${me.email.toLowerCase()}/${Date.now()}.${ext}`;
+  const { error: upErr } = await sb.storage.from('user-backgrounds').upload(path, prep.blob, { upsert:true, cacheControl:'3600', contentType: prep.blob.type || ('image/'+(ext==='jpg'?'jpeg':ext)) });
   if(upErr){ toast('Upload failed — try a smaller image'); return; }
   const { data: pub } = sb.storage.from('user-backgrounds').getPublicUrl(path);
-  myAppearance.bg_url = pub.publicUrl;
+  myAppearance.bg_url = pub.publicUrl; myAppearance.bg_zoom=100; myAppearance.bg_x=50; myAppearance.bg_y=50;
+  if(myAppearance.theme!=='custom-photo'){ myAppearance.theme='custom-photo'; applyTheme('custom-photo'); renderThemeSwatches(); }
   applyBackground(myAppearance.bg_url, myAppearance.bg_opacity);
-  document.getElementById('bg-preview').style.backgroundImage = `url('${myAppearance.bg_url}')`;
-  document.getElementById('bg-opacity-row').style.display = 'block';
+  mountBgEditor(); evt.target.value='';
   await saveAppearance();
-  toast('Background updated ✓');
+  toast('Background updated ✓ — drag the preview to choose the part you want');
 }
 async function removeBackground(){
-  myAppearance.bg_url = null;
-  applyBackground(null, myAppearance.bg_opacity);
-  document.getElementById('bg-preview').style.backgroundImage = '';
-  document.getElementById('bg-opacity-row').style.display = 'none';
+  myAppearance.bg_url = null; myAppearance.bg_zoom=100; myAppearance.bg_x=50; myAppearance.bg_y=50;
+  applyBackground(null, myAppearance.bg_opacity); mountBgEditor();
   await saveAppearance();
 }
 
@@ -1543,11 +1582,28 @@ function fillPayeeEmailDatalist(){
 }
 
 // ── NAV ──────────────────────────────────────
+const HUB_TILES=[
+ ['Bill Tracker','bill','#FF9D4D','🧾','Bills, spend & who owes whom',()=>switchPage('home')],
+ ['General Expense Tracker','expense','#FFD93D','🪙','Monthly / period trackers',()=>{etTab='period';switchPage('et');}],
+ ['Squad Split','squad','#4DD0E1','👥','Split costs with the squad',()=>{location.href='index.html';},()=>managing&&managing.group_type==='squad_split'],
+ ['Shared Card Payment','card','#4DB8FF','💳','Cards, due dates, shared access',()=>switchPage('cards')],
+ ['Budgeting Tools','budget','#6BCB77','📈','Budget, salary split & goals',()=>switchPage('budget')],
+ ['Event Expense Tracker','event','#FF6B6B','🎟️','Weddings, parties, occasions',()=>{etTab='occasion';switchPage('et');}],
+ ['Trip Expense Tracker','trip','#4DD0E1','✈️','Travel costs, shared trips',()=>{etTab='trip';switchPage('et');}],
+ ['EPP & Gold Plans','bill','#B06AFF','📅','Installments & schedules',()=>switchPage('plans')]
+];
+function renderHub(){
+  const g=document.getElementById('hub-grid'); if(!g) return;
+  const tiles=HUB_TILES.filter(t=>!t[6]||t[6]());
+  g.innerHTML=tiles.map((t,i)=>`<button class="hub-tile" style="--hc:${esc(t[2])}" data-hub="${i}"><img src="assets/art-${esc(t[1])}.webp" alt="" loading="lazy"><div class="hl"><i>${t[3]}</i><span>${esc(t[0])}<small>${esc(t[4])}</small></span></div></button>`).join('');
+  g.onclick=e=>{const b=e.target.closest('[data-hub]'); if(!b) return; tiles[+b.dataset.hub][5]();};
+}
 function switchPage(name){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   document.getElementById('nav-'+name)?.classList.add('active');
+  if(name==='hub') renderHub();
   if(name==='et'){ loadEt().then(renderEt); }
   if(name==='home') renderHome();
   if(name==='plans') renderPlans();
@@ -1865,7 +1921,7 @@ function renderHome(){
   const list=document.getElementById('expense-list');
   list.innerHTML = monthExp.length ? monthExp.sort((a,b)=>b.date.localeCompare(a.date)).map(x=>{
     const card = myCards.find(c=>c.id===x.card_id);
-    return `<div class="exp-item-card">
+    return `<div class="exp-item-card" data-ifx-k="b${esc(x.id)}" data-ifx-amt="${esc(x.amount)}" data-ifx-label="${esc(x.description)}" data-ifx-date="${esc(x.date)}">
       <div class="exp-icon">${esc(CAT_ICONS[x.category])||'📦'}</div>
       <div style="flex:1;">
         <div class="exp-name">${escapeHtml(x.description)}</div>
@@ -1915,7 +1971,7 @@ function renderHome(){
           <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--accent4);font-weight:800;margin-bottom:2px;padding:0 2px;">
             <span>${esc(mo)}${mo!==viewMonth?' · carried':''}</span><span>${esc(subtotal.toFixed(2))} AED</span>
           </div>
-          ${rows.map(o=>`<div class="owed-row"><div class="b-left"><div class="b-name">${escapeHtml(o.note||'Owed amount')}</div><div class="b-sub">${esc(o.month)}</div></div><div class="b-amt neg">${dhs(o.amount)}</div>${canOwed?`<button class="icon-btn" onclick="editOwedEntry(${esc(o.id)})" title="Edit">✏️</button><button class="icon-btn" onclick="deleteOwedEntry(${esc(o.id)})" title="Delete (mistake?)">🗑️</button>`:''}</div>`).join('')}
+          ${rows.map(o=>`<div class="owed-row" data-ifx-k="o${esc(o.id)}" data-ifx-amt="${esc(o.amount)}" data-ifx-label="${esc(o.note||'Owed amount')}" data-ifx-date="${esc(o.month)}"><div class="b-left"><div class="b-name">${escapeHtml(o.note||'Owed amount')}</div><div class="b-sub">${esc(o.month)}</div></div><div class="b-amt neg">${dhs(o.amount)}</div>${canOwed?`<button class="icon-btn" onclick="editOwedEntry(${esc(o.id)})" title="Edit">✏️</button><button class="icon-btn" onclick="deleteOwedEntry(${esc(o.id)})" title="Delete (mistake?)">🗑️</button>`:''}</div>`).join('')}
         </div>`;
       }).join('');
   }
@@ -1933,7 +1989,7 @@ function renderHome(){
   // this whole tab was read-only, so a mistaken "paid to admin" entry had no
   // fix short of a direct database edit.
   sList.innerHTML = historyRows.length ? historyRows.map(h=>`
-    <div class="owed-row settle"><div class="b-left"><div class="b-name">${esc(h.label)}</div><div class="b-sub">${escapeHtml(String(h.sub))}</div></div><div class="b-amt pos">${dhs(h.amount)}</div><button class="icon-btn" onclick="${h.kind==='settlement'?`deleteSettlementEntry(${h.id})`:`deletePayeeEntry(${h.id})`}" title="Delete (mistake?)">🗑️</button></div>
+    <div class="owed-row settle" data-ifx-k="h${esc(h.kind)}${esc(h.id)}" data-ifx-amt="${esc(h.amount)}" data-ifx-label="${esc(h.label)}" data-ifx-date="${esc(String(h.sub))}"><div class="b-left"><div class="b-name">${esc(h.label)}</div><div class="b-sub">${escapeHtml(String(h.sub))}</div></div><div class="b-amt pos">${dhs(h.amount)}</div><button class="icon-btn" onclick="${h.kind==='settlement'?`deleteSettlementEntry(${h.id})`:`deletePayeeEntry(${h.id})`}" title="Delete (mistake?)">🗑️</button></div>
   `).join('') : `<div class="empty-state"><span>💸</span>No payments recorded yet</div>`;
   renderPayeeBalances();
 
@@ -2311,7 +2367,7 @@ function renderCards(){
     } else {
       badge = `<button class="btn-tiny ghost" style="margin-top:6px;" onclick="event.stopPropagation();editCardDueDay(${esc(c.id)},null)">+ Set due day</button>`;
     }
-    return `<div class="card-tile" onclick="openCardMenu(${esc(c.id)})">
+    return `<div class="card-tile" ${cyc?`data-ifx-card data-ifx-k="c${esc(c.id)}" data-ifx-amt="${esc(cyc.amount)}" data-ifx-label="${esc(c.card_name)}" data-ifx-date="${esc(localDateStr(cyc.due))}"`:''} onclick="openCardMenu(${esc(c.id)})">
       <button class="cdel" onclick="event.stopPropagation();deleteCard(${esc(c.id)})">✕</button>
       <div class="cdot" style="background:${esc(c.color)};"></div>
       <div class="cname">${escapeHtml(c.card_name)}</div>
@@ -2716,7 +2772,7 @@ function renderPayeeBalances(){
     const bal = owe-paid;
     const entryRows = entries.slice(0,5).map(e=>{
       const loggedByThem = e.created_by_email && p.party_email && e.created_by_email.toLowerCase()===p.party_email.toLowerCase();
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:.72rem;color:var(--muted);">
+      return `<div data-ifx-k="pe${esc(e.id)}" data-ifx-amt="${esc(e.amount)}" data-ifx-label="${esc(e.note||e.entry_type)}" data-ifx-date="${esc(e.date)}" style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:.72rem;color:var(--muted);">
         <span>${esc(e.date)} · ${e.entry_type==='owe'?'owed':'paid'} · ${dhs(e.amount)}${e.note?esc(' · '+escapeHtml(e.note)):''}${loggedByThem?' · <i>logged by them</i>':''}</span>
         <span style="display:flex;gap:2px;">
           <button class="icon-btn" onclick="editPayeeEntry(${esc(e.id)})" title="Edit">✏️</button>
@@ -2928,7 +2984,7 @@ function renderOwedToMe(){
   el.innerHTML = owedToMeRows.map(r=>{
     const entryRows = r.entries.slice(0,8).map(e=>{
       const loggedByYou = e.created_by_email && e.created_by_email.toLowerCase()===managing.email.toLowerCase();
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:.72rem;color:var(--muted);">
+      return `<div data-ifx-k="pe${esc(e.id)}" data-ifx-amt="${esc(e.amount)}" data-ifx-label="${esc(e.note||e.entry_type)}" data-ifx-date="${esc(e.date)}" style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:.72rem;color:var(--muted);">
         <span>${esc(e.date)} · ${e.entry_type==='owe'?'they owe':'they paid'} · ${dhs(e.amount)}${e.note?esc(' · '+escapeHtml(e.note)):''}${loggedByYou?' · <i>logged by you</i>':''}</span>
         <span style="display:flex;gap:2px;">
           <button class="icon-btn" onclick="editPayeeEntry(${esc(e.id)})" title="Edit">✏️</button>
@@ -3332,7 +3388,7 @@ function planCardHtml(p){
     else body=`<div style="font-size:.78rem;line-height:1.9;">💳 ${escapeHtml(planCardName(p.card_id))}<br>📆 ${esc(p.start_date)} → ${esc(p.end_date)} · due day ${esc(p.due_day)}<br>🏷️ ${escapeHtml(p.event_name)} · ${esc(p.plan_type.toUpperCase())} · ${esc(LEDGER_LBL[p.ledger])}${pe?esc(' · '+escapeHtml(pe)):''}<br>${p.notes?esc('📝 '+escapeHtml(p.notes)):''}</div><div style="display:flex;gap:8px;margin-top:10px;"><button class="btn-tiny" onclick="openPlanModal(${esc(p.id)})">✏️ Edit</button><button class="btn-tiny ghost" onclick="deletePlan(${esc(p.id)})">🗑️ Delete</button></div>`;
     body=tabs+body;
   }
-  return `<div class="plan-card ${open?'open':''}"><div class="plan-head" onclick="togglePlan(${esc(p.id)})"><span style="font-size:1.3rem;">${p.plan_type==='gold'?'🪙':'📱'}</span><div class="pt">${escapeHtml(p.title)}<small>${esc(s.paidCount)}/${esc(s.ps.length)} paid · ${esc(s.remain.toFixed(2))} left</small></div><span class="plan-chev">▶</span></div>${body}</div>`;
+  return `<div class="plan-card ${open?'open':''}" data-ifx-card data-ifx-k="pl${esc(p.id)}" data-ifx-amt="${esc(p.total_amount)}" data-ifx-label="${esc(p.title)}" data-ifx-date="${esc(p.start_date)}"><div class="plan-head" onclick="togglePlan(${esc(p.id)})"><span style="font-size:1.3rem;">${p.plan_type==='gold'?'🪙':'📱'}</span><div class="pt">${escapeHtml(p.title)}<small>${esc(s.paidCount)}/${esc(s.ps.length)} paid · ${esc(s.remain.toFixed(2))} left</small></div><span class="plan-chev">▶</span></div>${body}</div>`;
 }
 function nextMonthDue(dateStr,dueDay){const d=new Date(dateStr+'T00:00:00');const y=d.getFullYear(),m=d.getMonth()+1,dim=new Date(y,m+1,0).getDate();return localDateStr(new Date(y,m,Math.min(dueDay,dim)));}
 async function payInstallment(id,full){
@@ -3357,6 +3413,7 @@ async function payInstallment(id,full){
   await loadPlans(); renderPlans(); toast(diff>0.004?'Paid ✓ — '+diff.toFixed(2)+' carried to next month':'Paid ✓');
 }
 // ═══ EXPENSE TRACKER module ═══
+const ETK_ICON={period:'📆',occasion:'🎟️',trip:'✈️'}, ETK_NAME={period:'period tracker',occasion:'event tracker',trip:'trip tracker'};
 const ET_DEF=[['Breakfast','🍳'],['Lunch','🍱'],['Dinner','🍽️'],['Diet items','🥗'],['Necessaries','🧴'],['Groceries','🛒'],['Lifestyle','✨'],['Fashion & Grooming','💇'],['Medical','💊'],['Outing','🎡'],['Travel','✈️'],['Stay','🏨'],['Shopping','🛍️'],['Gifts','🎁'],['Other','📦']];
 let etTrackers=[],etEntries=[],etCats=[],etTab='period',etOpen=null,etF={cat:'all',from:'',to:''};
 async function loadEt(){
@@ -3376,9 +3433,9 @@ function renderEt(){const r=document.getElementById('et-root');if(!r)return;cons
 function etList(r){
   const list=etTrackers.filter(t=>t.kind===etTab);
   r.innerHTML=`<div class="section-title">🧾 Expense Tracker</div>
-  <div class="ptabs"><button class="ptab ${etTab==='period'?'on':''}" onclick="etTab='period';renderEt()">📆 Monthly / Period</button><button class="ptab ${etTab==='occasion'?'on':''}" onclick="etTab='occasion';renderEt()">🕋 Occasions</button></div>
-  <button class="btn-add" style="margin-bottom:14px;" onclick="openEtModal()">➕ New ${etTab==='period'?'period tracker':'occasion'}</button>
-  ${list.length?list.map(t=>{const es=etEntries.filter(e=>e.tracker_id===t.id),tot=es.reduce((a,e)=>a+Number(e.amount),0);return `<div class="et-card" onclick="etOpenT(${esc(t.id)})"><div style="display:flex;justify-content:space-between;gap:8px;"><b>${t.kind==='occasion'?'🕋':'📆'} ${escapeHtml(t.title)}</b><span class="et-total">${esc(etMoney(tot,t.currency))}</span></div><div style="font-size:.7rem;color:var(--muted);margin-top:4px;">${esc(t.start_date)} → ${esc(t.end_date)} · ${esc(es.length)} entries${(t.participants||[]).length?esc(' · 👥 '+((t.participants||[]).length+1)):' · solo'}</div></div>`;}).join(''):'<p style="text-align:center;color:var(--muted);">Nothing here yet.</p>'}`;
+  ${etTabsHtml()}
+  <div style="display:flex;gap:8px;margin-bottom:14px;"><button class="btn-add" style="margin:0;flex:1;" onclick="openEtModal()">➕ New ${etNewLabel()}</button>${ifxXfer.button('et_trackers','Import / Export')}</div>
+  ${list.length?list.map(t=>{const es=etEntries.filter(e=>e.tracker_id===t.id),tot=es.reduce((a,e)=>a+Number(e.amount),0);return `<div class="et-card" data-ifx-card data-ifx-k="t${esc(t.id)}" data-ifx-amt="${esc(tot)}" data-ifx-cur="${esc(t.currency)}" data-ifx-label="${esc(t.title)}" data-ifx-date="${esc(t.start_date)}" onclick="etOpenT(${esc(t.id)})"><div style="display:flex;justify-content:space-between;gap:8px;"><b>${ETK_ICON[t.kind]||'📆'} ${escapeHtml(t.title)}</b><span class="et-total">${esc(etMoney(tot,t.currency))}</span></div><div style="font-size:.7rem;color:var(--muted);margin-top:4px;">${esc(t.start_date)} → ${esc(t.end_date)} · ${esc(es.length)} entries${(t.participants||[]).length?esc(' · 👥 '+((t.participants||[]).length+1)):' · solo'}</div></div>`;}).join(''):'<p style="text-align:center;color:var(--muted);">Nothing here yet.</p>'}`;
 }
 function etOpenT(id){etOpen=id;etF={cat:'all',from:'',to:''};renderEt();window.scrollTo(0,0);}
 function etDetail(r,t){
@@ -3389,7 +3446,7 @@ function etDetail(r,t){
   r.innerHTML=`<button class="chip" onclick="etOpen=null;renderEt()">‹ Back</button>
   <div class="et-card" style="cursor:default;margin-top:10px;"><b>${escapeHtml(t.title)}</b><div style="font-size:.7rem;color:var(--muted);">${esc(t.start_date)} → ${esc(t.end_date)} · ${esc(t.currency)}</div>
   <div class="et-total">${esc(etMoney(es.length===all.length?grand:tot,t.currency))}</div><div style="font-size:.7rem;color:var(--muted);">${etF.cat==='all'&&!etF.from&&!etF.to?'Total spent':'Filtered total'} · overall ${esc(etMoney(grand,t.currency))}</div>
-  <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;"><button class="btn-tiny" onclick="exportEt('pdf')">📄 PDF</button><button class="btn-tiny" onclick="exportEt('xlsx')">📊 Excel</button><button class="btn-tiny ghost" onclick="deleteEt(${esc(t.id)})">🗑️ Delete</button></div></div>
+  <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;"><button class="btn-tiny" onclick="exportEt('pdf')">📄 PDF</button><button class="btn-tiny" onclick="exportEt('xlsx')">📊 Excel</button>${ifxXfer.button('et_entries','Import entries')}<button class="btn-tiny" onclick="etEditTracker(${esc(t.id)})">✏️ Edit</button><button class="btn-tiny ghost" onclick="deleteEt(${esc(t.id)})">🗑️ Delete</button></div></div>
   <div class="card"><div class="section-title" style="font-size:1rem;">➕ Add expense</div>
   <div class="et-grid fg-inline"><select id="ete-cat">${etAllCats().map(c=>`<option>${escapeHtml(c[0])}</option>`).join('')}</select><input id="ete-amt" type="number" step="0.01" placeholder="Amount (${esc(t.currency)})"><input id="ete-date" type="date" min="${esc(t.start_date)}" max="${esc(t.end_date)}" value="${esc(dflt)}"><input id="ete-note" placeholder="Note (optional)"></div>
   ${people.length>1?`<div class="fg-inline" style="margin-top:8px;"><select id="ete-by">${people.map(e=>`<option value="${escapeHtml(e)}" ${e.toLowerCase()===me.email.toLowerCase()?'selected':''}>Spent by ${escapeHtml(etName(e))}</option>`).join('')}</select></div>`:''}
@@ -3399,20 +3456,20 @@ function etDetail(r,t){
   <div class="et-grid fg-inline" style="margin:6px 0 12px;"><input type="date" value="${esc(etF.from)}" onchange="etF.from=this.value;renderEt()" title="From"><input type="date" value="${esc(etF.to)}" onchange="etF.to=this.value;renderEt()" title="To"></div>
   <div class="card"><div class="section-title" style="font-size:1rem;">📊 Breakdown</div>${etCatTotals(es).map(([c,v])=>`<div style="margin-bottom:9px;"><div style="display:flex;justify-content:space-between;font-size:.76rem;"><span>${esc(etIcon(c))} ${escapeHtml(c)}</span><b>${esc(etMoney(v,t.currency))}</b></div><div class="et-bar"><i style="width:${tot?esc(Math.round(v/tot*100)):0}%"></i></div></div>`).join('')||'<p style="color:var(--muted);font-size:.78rem;">No entries.</p>'}
   ${people.length>1?`<div style="margin-top:8px;font-size:.76rem;"><b>By person</b>${people.map(e=>`<div class="et-row"><span style="flex:1">${escapeHtml(etName(e))}</span><b>${esc(etMoney(es.filter(x=>(x.spent_by||t.user_email).toLowerCase()===e.toLowerCase()).reduce((a,x)=>a+Number(x.amount),0),t.currency))}</b></div>`).join('')}</div>`:''}</div>
-  <div class="card"><div class="section-title" style="font-size:1rem;">🗓️ Entries</div>${Object.keys(byDate).sort().reverse().map(d=>`<div style="font-size:.68rem;color:var(--muted);margin-top:8px;font-weight:800;">${esc(d)}</div>${byDate[d].map(e=>`<div class="et-row"><span>${esc(etIcon(e.category))}</span><span style="flex:1;min-width:0;">${escapeHtml(e.category)}${e.note?'<small style="color:var(--muted)"> · '+escapeHtml(e.note)+'</small>':''}${people.length>1?'<small style="color:var(--muted)"> · '+escapeHtml(etName(e.spent_by||t.user_email))+'</small>':''}</span><b>${esc(Number(e.amount).toFixed(2))}</b><button class="btn-tiny ghost" onclick="delEtEntry(${esc(e.id)})">✕</button></div>`).join('')}`).join('')||'<p style="color:var(--muted);font-size:.78rem;">No entries.</p>'}</div>`;
+  <div class="card"><div class="section-title" style="font-size:1rem;">🗓️ Entries</div>${Object.keys(byDate).sort().reverse().map(d=>`<div style="font-size:.68rem;color:var(--muted);margin-top:8px;font-weight:800;">${esc(d)}</div>${byDate[d].map(e=>`<div class="et-row" data-ifx-k="e${esc(e.id)}" data-ifx-amt="${esc(e.amount)}" data-ifx-cur="${esc(t.currency)}" data-ifx-label="${esc(e.category+(e.note?' · '+e.note:''))}" data-ifx-date="${esc(e.entry_date)}"><span>${esc(etIcon(e.category))}</span><span style="flex:1;min-width:0;">${escapeHtml(e.category)}${e.note?'<small style="color:var(--muted)"> · '+escapeHtml(e.note)+'</small>':''}${people.length>1?'<small style="color:var(--muted)"> · '+escapeHtml(etName(e.spent_by||t.user_email))+'</small>':''}</span><b>${esc(Number(e.amount).toFixed(2))}</b><button class="btn-tiny ghost" onclick="etEditEntry(${esc(e.id)})" aria-label="Edit">✏️</button><button class="btn-tiny ghost" onclick="delEtEntry(${esc(e.id)})" aria-label="Delete">✕</button></div>`).join('')}`).join('')||'<p style="color:var(--muted);font-size:.78rem;">No entries.</p>'}</div>`;
 }
 function etThisMonth(){const n=new Date();document.getElementById('et-start').value=localDateStr(new Date(n.getFullYear(),n.getMonth(),1));document.getElementById('et-end').value=localDateStr(new Date(n.getFullYear(),n.getMonth()+1,0));if(!document.getElementById('et-title').value)document.getElementById('et-title').value=n.toLocaleString('en',{month:'long',year:'numeric'});}
 function openEtModal(){
-  document.getElementById('et-modal-title').textContent=etTab==='period'?'📆 New period tracker':'🕋 New occasion';
+  document.getElementById('et-modal-title').textContent='➕ New '+ETK_NAME[etTab];
   ['et-title','et-start','et-end','et-notes'].forEach(i=>document.getElementById(i).value='');document.getElementById('et-cur').value='AED';
-  document.getElementById('et-people-wrap').style.display=etTab==='occasion'?'block':'none';
+  document.getElementById('et-people-wrap').style.display=etTab!=='period'?'block':'none';
   document.getElementById('et-people').innerHTML=appUsersDirectory.filter(u=>u.email.toLowerCase()!==managing.email.toLowerCase()).map(u=>`<label class="chk"><input type="checkbox" value="${escapeHtml(u.email.toLowerCase())}"> ${escapeHtml(u.name)} <small style="color:var(--muted)">${escapeHtml(u.email)}</small></label>`).join('');
   if(etTab==='period') etThisMonth(); document.getElementById('et-modal').classList.add('open');
 }
 async function createEt(){
   const g=i=>document.getElementById(i).value.trim(), title=g('et-title'), st=g('et-start'), en=g('et-end');
   if(!title||!st||!en) return toast('Title, start and end date are required'); if(en<st) return toast('End date must be after start date');
-  const parts=etTab==='occasion'?[...document.querySelectorAll('#et-people input:checked')].map(i=>i.value):[];
+  const parts=etTab!=='period'?[...document.querySelectorAll('#et-people input:checked')].map(i=>i.value):[];
   const {error}=await sb.from('et_trackers').insert({user_email:managing.email,kind:etTab,title,currency:(g('et-cur')||'AED').toUpperCase(),start_date:st,end_date:en,participants:parts,notes:g('et-notes'),created_by_email:me.email});
   if(error) return toast('❌ '+error.message); document.getElementById('et-modal').classList.remove('open'); await loadEt(); renderEt(); toast('Created ✓');
 }
