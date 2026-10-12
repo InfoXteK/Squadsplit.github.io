@@ -13,7 +13,8 @@
 <link rel="icon" href="assets/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet"></noscript>
+<link rel="stylesheet" href="ifinex-ui.css">
 <script src="vendor/supabase.js"></script>
 <script src="ifinex-session.js"></script>
 <script src="ifinex-alerts.js"></script>
@@ -25,8 +26,11 @@
 <script defer src="vendor/xlsx.full.min.js"></script>
 <script defer src="ifinex-theme.js"></script>
 <script defer src="ifinex-tools.js"></script>
+<script defer src="ifinex-edit-plus.js"></script>
+<script defer src="ifinex-update.js"></script>
 <script defer src="ifinex-datasets.js"></script>
 <script defer src="ifinex-budget.js"></script>
+<script defer src="ifinex-et-plus.js"></script>
 <style>
 :root {
   --bg:#0b0b18;--card:#13132a;--card2:#1a1a35;--border:#2a2a50;
@@ -364,7 +368,6 @@ html{max-width:100%;overflow-x:hidden;}body{max-width:100%;overflow-x:visible;}
 .hub-tile .hl{display:flex;align-items:center;gap:7px;padding:9px 10px;font-weight:900;font-size:.76rem;line-height:1.15;}
 .hub-tile .hl i{font-style:normal;font-size:1.05rem;}
 .hub-tile small{display:block;font-weight:600;font-size:.62rem;color:var(--muted);}
-.ifx-host[data-ifx-card]{padding-top:36px !important;padding-left:unset !important;}.ifx-host[data-ifx-card] .ifx-cb{top:11px;left:12px;transform:none;}
 .hd-logo{width:38px;height:38px;vertical-align:middle;margin-right:6px;border-radius:50%;cursor:pointer;}.hd-word{height:32px;width:auto;vertical-align:middle;border-radius:8px;cursor:pointer;}.hd-title h2{display:flex;align-items:center;}
 </style>
 </head>
@@ -378,7 +381,7 @@ html{max-width:100%;overflow-x:hidden;}body{max-width:100%;overflow-x:visible;}
     <div class="login-logo">
       <img class="logo-img" src="assets/ifinex-emblem-192.png" alt="" width="104" height="104" style="width:104px;height:104px;border-radius:50%;">
       <img src="assets/ifinex-wordmark.png" alt="iFiNeX" style="width:230px;max-width:72%;display:block;margin:6px auto 0;border-radius:12px;"><h1 style="position:absolute;left:-9999px;">iFiNeX</h1>
-      <p>Plan · Track · Save · Grow<br><small style="opacity:.7">web v8.3 · app v1.9</small></p>
+      <p>Plan · Track · Save · Grow<br><small style="opacity:.7">web v8.6 · app v2.2</small></p>
     </div>
 
     <div class="error-msg" id="login-error"></div>
@@ -459,9 +462,10 @@ html{max-width:100%;overflow-x:hidden;}body{max-width:100%;overflow-x:visible;}
     <button class="drawer-item" onclick="closeDrawer();ifxXfer.open()">⇅ Import / Export (Excel &amp; PDF)</button>
     <button class="drawer-item" onclick="closeDrawer();openAppearance()">🎨 Theme &amp; background</button>
     <button class="drawer-item" onclick="closeDrawer();openAlerts()">🔔 Alerts &amp; notifications</button>
+    <button class="drawer-item" id="btn-update" onclick="closeDrawer();ifxUpdate.open()">⬆️ Check for updates<span id="upd-dot"></span></button>
     <button class="drawer-item" id="btn-open-admin" style="display:none;" onclick="closeDrawer();openAdmin()">⚙️ Admin</button>
     <button class="drawer-item" onclick="closeDrawer();logout()">🚪 Log out</button>
-    <div style="font-size:.64rem;color:var(--muted);text-align:center;padding:10px;">iFiNeX web v8.3 · app v1.9</div>
+    <div id="ifx-ver" style="font-size:.64rem;color:var(--muted);text-align:center;padding:10px;">iFiNeX web v8.6 · app v2.2</div>
   </aside>
 
   <!-- HOME -->
@@ -1161,7 +1165,7 @@ function canManageOwed(){ return !!(me && (me.is_admin || iAmAdminDelegate)); }
 // any explanation — that "looks like" a login bug but is really an
 // unhandled crash. If something does go wrong, we log it and still show
 // the login form so the person isn't stuck looking at a blank page.
-window.onload = async () => {
+async function ifxBoot(){   // v8.6: DOMContentLoaded, not window.onload (which waited for fonts/images)
   try{
     document.getElementById('add-date').value = localDateStr(new Date());
     document.getElementById('pe-date').value = localDateStr(new Date());
@@ -1172,10 +1176,19 @@ window.onload = async () => {
     // v8.3 persistent login: restore the stored session (3 storage places, retries, never falls back to the login form
     // because of a slow network). The login form only appears when there is genuinely no session.
     ifxBootSplash('Restoring your session…');
-    const R = await ifxRestoreSession(sb);
+    const _ce = ifxCachedEmail();
+    const R = await ifxRestoreSession(sb, (_ce && ifxKeep.get('prof_'+_ce)) ? 2500 : 0);   // v8.6: slow network + cached profile = open from cache after 2.5 s
     if (R.session?.user?.email) {
       currentEmail = R.session.user.email.toLowerCase();
       sessionStorage.setItem('bt_email', currentEmail);
+      // v8.4 FAST PATH: a cached profile + remembered account = open the app instantly, refresh in the background
+      try{
+        const c = JSON.parse(ifxKeep.get('prof_'+currentEmail)||'null'), rem = getRememberedManaging();
+        if(c && c.me && Array.isArray(c.options) && c.options.length){
+          const pick = c.options.find(o=>rem && o.email.toLowerCase()===rem.toLowerCase()) || (c.options.length===1 ? c.options[0] : null);
+          if(pick){ window._accountOptions=c.options; me=c.me; iAmAdminDelegate=!!c.iAmAdminDelegate; managing=pick; enterApp(); tryEnter(true).catch(e=>console.warn('profile refresh',e)); return; }
+        }
+      }catch(e){ console.warn('fast path skipped', e); }
       try { await tryEnter(); ifxBootHide(); }
       catch(e){ console.warn('Enter failed', e); ifxBootOffline(()=>location.reload(), e && e.message); }
     } else if (R.offline) {
@@ -1185,7 +1198,8 @@ window.onload = async () => {
     console.error('Startup error:', e);
     ifxBootOffline(()=>location.reload(), e && e.message);
   }
-};
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',ifxBoot); else ifxBoot();
 
 // ── LOGIN: send/verify OTP (Supabase Auth, same pattern as Squad Split) ──
 async function sendOTP(){
@@ -1235,7 +1249,7 @@ function backToEmail(){
   document.getElementById('step-email').classList.add('active');
   clearInterval(timerInterval);
 }
-async function tryEnter(){
+async function tryEnter(silent){
   const [ownRes, delRes] = await Promise.all([
     sb.from('app_users').select('*').ilike('email', escLike(currentEmail)).maybeSingle(),
     sb.from('app_users').select('*').ilike('delegate_email', escLike(currentEmail))
@@ -1244,6 +1258,7 @@ async function tryEnter(){
   const own = ownRes.data || null;
   const delegated = delRes.data || [];
   if(!own && delegated.length===0){
+    if(silent){ ifxKeep.del('prof_'+currentEmail); document.getElementById('screen-app').classList.remove('active'); document.getElementById('screen-login').classList.add('active'); }
     document.getElementById('step-otp').classList.remove('active');
     document.getElementById('step-not-registered').classList.add('active');
     return;
@@ -1259,6 +1274,8 @@ async function tryEnter(){
   // v7.2: does this login stand in for an admin anywhere? `delegated` already
   // holds every account this email is delegate_email for — no extra query.
   iAmAdminDelegate = delegated.some(d => d.is_admin === true);
+  try{ ifxKeep.set('prof_'+currentEmail, JSON.stringify({me, options, iAmAdminDelegate})); }catch(e){}   // v8.4: lets the next open skip the network wait
+  if(silent) return;   // background refresh of the cached profile: the app is already open
 
   if(delegated.length===0){
     managing = own;
@@ -1351,6 +1368,7 @@ async function logout(){
   unsubscribeNotifRealtime();
   try{ await ifxAlertsDisable(true, true); }catch(e){}   // v8.0: forget this phone's alert secret BEFORE the session is destroyed (keepWant: returns for the same person)
   await sb.auth.signOut();
+  try{ Object.keys(localStorage).filter(k=>k.indexOf('ifx_prof_')===0).forEach(k=>localStorage.removeItem(k)); }catch(e){}
   ifxKeep.clearAll(); try{ ifxBudget.reset(); }catch(e){}
   sessionStorage.removeItem('bt_email');
   location.reload();
@@ -1361,11 +1379,12 @@ async function enterApp(){
   document.getElementById('screen-login').classList.remove('active');
   document.getElementById('screen-app').classList.add('active');
   if(me.is_admin) document.getElementById('btn-open-admin').style.display='inline-block';
+  try{ ifxBootHide(); }catch(e){}
   loadAppearance(); // tied to me.email — runs once per login, not per account switch
   nativeRequestNotifPermission(); // once per login, native app only — no-op on the web build
   ifxAlertsResume(); // v8.0: bring native background alerts back for this person (no-op on web / iPhone)
-  await refreshManagingUI();
-  switchPage('hub');   // v8.3: land on the module hub
+  switchPage('hub');   // v8.4: show the hub at once; data fills in behind it
+  refreshManagingUI().catch(e=>console.warn('data load',e));
 }
 
 // Everything that depends on WHICH account is being managed — split out
@@ -1413,10 +1432,24 @@ const THEMES = [
   { id:'noise-dark',  label:'Noise',       c1:'#0e0e12', c2:'#b06aff' },
   { id:'sandstone',   label:'Sandstone',   c1:'#2a1d14', c2:'#ffb066' },
   { id:'custom-photo',label:'Your Photo',  c1:'#0c0c16', c2:'#f5f5ff' },
+  // v8.4 design styles
+  { id:'st-flat',    label:'Flat',            c1:'#eef1f6', c2:'#2f7cf6' },
+  { id:'st-material',label:'Material',        c1:'#fef7ff', c2:'#6750a4' },
+  { id:'st-soft',    label:'Soft UI',         c1:'#e4e9f1', c2:'#7c6ff0' },
+  { id:'st-glass',   label:'Glass',           c1:'#4a2a9c', c2:'#ff7ad9' },
+  { id:'st-clay',    label:'Clay',            c1:'#fdeeff', c2:'#ff8fb8' },
+  { id:'st-skeu',    label:'Skeuomorphic',    c1:'#3b2a1d', c2:'#e0a93d' },
+  { id:'st-brutal',  label:'Neo-Brutalism',   c1:'#fff7d6', c2:'#ff5c8a' },
+  { id:'st-fluent',  label:'Fluent',          c1:'#1c1c1f', c2:'#0078d4' },
+  { id:'st-oled',    label:'OLED Black',      c1:'#000000', c2:'#3b82f6' },
+  { id:'st-cyber',   label:'Cyberpunk',       c1:'#07040f', c2:'#ff2bd6' },
+  { id:'st-minimal', label:'Minimal',         c1:'#ffffff', c2:'#111111' },
+  { id:'st-bento',   label:'Bento',           c1:'#0e1014', c2:'#7c8cff' },
 ];
 let myAppearance = { theme:'default', bg_url:null, bg_opacity:0.30, bg_zoom:100, bg_x:50, bg_y:50 };
 
 function applyTheme(themeId){
+  try{ ifxKeep.set('theme', themeId||'default'); }catch(e){}
   if(themeId && themeId!=='default') document.documentElement.setAttribute('data-theme', themeId);
   else document.documentElement.removeAttribute('data-theme');
 }
@@ -1431,7 +1464,7 @@ function renderThemeSwatches(){
   `).join('');
 }
 async function loadAppearance(){
-  const { data } = await sb.from('bill_user_prefs').select('*').ilike('user_email', me.email).maybeSingle();
+  const { data } = await sb.from('bill_user_prefs').select('*').ilike('user_email', escLike(me.email)).maybeSingle();
   myAppearance = data ? { theme:data.theme||'default', bg_url:data.bg_url||null, bg_opacity:data.bg_opacity??0.30, bg_zoom:data.bg_zoom??100, bg_x:data.bg_x??50, bg_y:data.bg_y??50 } : { theme:'default', bg_url:null, bg_opacity:0.30, bg_zoom:100, bg_x:50, bg_y:50 };
   applyTheme(myAppearance.theme);
   applyBackground(myAppearance.bg_url, myAppearance.bg_opacity);
@@ -1556,7 +1589,7 @@ function fillPayeeEmailDatalist(){
 const HUB_TILES=[
  ['Bill Tracker','bill','#FF9D4D','🧾','Bills, spend & who owes whom',()=>switchPage('home')],
  ['General Expense Tracker','expense','#FFD93D','🪙','Monthly / period trackers',()=>{etTab='period';switchPage('et');}],
- ['Squad Split','squad','#4DD0E1','👥','Split costs with the squad',()=>{location.href='index.html';},()=>managing&&managing.group_type==='squad_split'],
+ ['Squad Split','squad','#4DD0E1','👥','Split costs with the squad',()=>{location.href='index.html'+(managing&&me&&managing.email&&me.email&&managing.email.toLowerCase()!==me.email.toLowerCase()?'?as='+encodeURIComponent(managing.email):'');},()=>managing&&managing.group_type==='squad_split'],
  ['Shared Card Payment','card','#4DB8FF','💳','Cards, due dates, shared access',()=>switchPage('cards')],
  ['Budgeting Tools','budget','#6BCB77','📈','Budget, salary split & goals',()=>switchPage('budget')],
  ['Event Expense Tracker','event','#FF6B6B','🎟️','Weddings, parties, occasions',()=>{etTab='occasion';switchPage('et');}],
@@ -3404,8 +3437,8 @@ function renderEt(){const r=document.getElementById('et-root');if(!r)return;cons
 function etList(r){
   const list=etTrackers.filter(t=>t.kind===etTab);
   r.innerHTML=`<div class="section-title">🧾 Expense Tracker</div>
-  <div class="ptabs"><button class="ptab ${etTab==='period'?'on':''}" onclick="etTab='period';renderEt()">📆 Monthly</button><button class="ptab ${etTab==='occasion'?'on':''}" onclick="etTab='occasion';renderEt()">🎟️ Events</button><button class="ptab ${etTab==='trip'?'on':''}" onclick="etTab='trip';renderEt()">✈️ Trips</button></div>
-  <div style="display:flex;gap:8px;margin-bottom:14px;"><button class="btn-add" style="margin:0;flex:1;" onclick="openEtModal()">➕ New ${ETK_NAME[etTab]}</button>${ifxXfer.button('et_trackers','Import / Export')}</div>
+  ${etTabsHtml()}
+  <div style="display:flex;gap:8px;margin-bottom:14px;"><button class="btn-add" style="margin:0;flex:1;" onclick="openEtModal()">➕ New ${etNewLabel()}</button>${ifxXfer.button('et_trackers','Import / Export')}</div>
   ${list.length?list.map(t=>{const es=etEntries.filter(e=>e.tracker_id===t.id),tot=es.reduce((a,e)=>a+Number(e.amount),0);return `<div class="et-card" data-ifx-card data-ifx-k="t${esc(t.id)}" data-ifx-amt="${esc(tot)}" data-ifx-cur="${esc(t.currency)}" data-ifx-label="${esc(t.title)}" data-ifx-date="${esc(t.start_date)}" onclick="etOpenT(${esc(t.id)})"><div style="display:flex;justify-content:space-between;gap:8px;"><b>${ETK_ICON[t.kind]||'📆'} ${escapeHtml(t.title)}</b><span class="et-total">${esc(etMoney(tot,t.currency))}</span></div><div style="font-size:.7rem;color:var(--muted);margin-top:4px;">${esc(t.start_date)} → ${esc(t.end_date)} · ${esc(es.length)} entries${(t.participants||[]).length?esc(' · 👥 '+((t.participants||[]).length+1)):' · solo'}</div></div>`;}).join(''):'<p style="text-align:center;color:var(--muted);">Nothing here yet.</p>'}`;
 }
 function etOpenT(id){etOpen=id;etF={cat:'all',from:'',to:''};renderEt();window.scrollTo(0,0);}
@@ -3417,17 +3450,17 @@ function etDetail(r,t){
   r.innerHTML=`<button class="chip" onclick="etOpen=null;renderEt()">‹ Back</button>
   <div class="et-card" style="cursor:default;margin-top:10px;"><b>${escapeHtml(t.title)}</b><div style="font-size:.7rem;color:var(--muted);">${esc(t.start_date)} → ${esc(t.end_date)} · ${esc(t.currency)}</div>
   <div class="et-total">${esc(etMoney(es.length===all.length?grand:tot,t.currency))}</div><div style="font-size:.7rem;color:var(--muted);">${etF.cat==='all'&&!etF.from&&!etF.to?'Total spent':'Filtered total'} · overall ${esc(etMoney(grand,t.currency))}</div>
-  <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;"><button class="btn-tiny" onclick="exportEt('pdf')">📄 PDF</button><button class="btn-tiny" onclick="exportEt('xlsx')">📊 Excel</button>${ifxXfer.button('et_entries','Import entries')}<button class="btn-tiny ghost" onclick="deleteEt(${esc(t.id)})">🗑️ Delete</button></div></div>
+  <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;"><button class="btn-tiny" onclick="exportEt('pdf')">📄 PDF</button><button class="btn-tiny" onclick="exportEt('xlsx')">📊 Excel</button>${ifxXfer.button('et_entries','Import entries')}<button class="btn-tiny" onclick="etEditTracker(${esc(t.id)})">✏️ Edit</button><button class="btn-tiny ghost" onclick="deleteEt(${esc(t.id)})">🗑️ Delete</button></div></div>
   <div class="card"><div class="section-title" style="font-size:1rem;">➕ Add expense</div>
   <div class="et-grid fg-inline"><select id="ete-cat">${etAllCats().map(c=>`<option>${escapeHtml(c[0])}</option>`).join('')}</select><input id="ete-amt" type="number" step="0.01" placeholder="Amount (${esc(t.currency)})"><input id="ete-date" type="date" min="${esc(t.start_date)}" max="${esc(t.end_date)}" value="${esc(dflt)}"><input id="ete-note" placeholder="Note (optional)"></div>
   ${people.length>1?`<div class="fg-inline" style="margin-top:8px;"><select id="ete-by">${people.map(e=>`<option value="${escapeHtml(e)}" ${e.toLowerCase()===me.email.toLowerCase()?'selected':''}>Spent by ${escapeHtml(etName(e))}</option>`).join('')}</select></div>`:''}
   <button class="btn-add" style="margin-top:10px;" onclick="addEtEntry()">Add</button>
   <div class="et-grid fg-inline" style="margin-top:10px;grid-template-columns:1fr 1fr 70px;"><input id="etc-name" placeholder="New category"><input id="etc-icon" placeholder="Emoji" maxlength="2"><button class="btn-tiny" onclick="addEtCat()">Add</button></div></div>
-  <div class="chip-row"><button class="chip ${etF.cat==='all'?'on':''}" onclick="etF.cat='all';renderEt()">All</button>${ct.map(([c,v])=>`<button class="chip ${etF.cat===c?'on':''}" onclick="etF.cat='${esc(jsq(c.replace(/'/g,"\\'")))}';renderEt()">${esc(etIcon(c))} ${escapeHtml(c)} · ${esc(v.toFixed(0))}</button>`).join('')}</div>
+  <div class="chip-row"><button class="chip ${etF.cat==='all'?'on':''}" onclick="etF.cat='all';renderEt()">All</button>${ct.map(([c,v])=>`<button class="chip ${etF.cat===c?'on':''}" onclick="etF.cat='${esc(jsq(c))}';renderEt()">${esc(etIcon(c))} ${escapeHtml(c)} · ${esc(v.toFixed(0))}</button>`).join('')}</div>
   <div class="et-grid fg-inline" style="margin:6px 0 12px;"><input type="date" value="${esc(etF.from)}" onchange="etF.from=this.value;renderEt()" title="From"><input type="date" value="${esc(etF.to)}" onchange="etF.to=this.value;renderEt()" title="To"></div>
   <div class="card"><div class="section-title" style="font-size:1rem;">📊 Breakdown</div>${etCatTotals(es).map(([c,v])=>`<div style="margin-bottom:9px;"><div style="display:flex;justify-content:space-between;font-size:.76rem;"><span>${esc(etIcon(c))} ${escapeHtml(c)}</span><b>${esc(etMoney(v,t.currency))}</b></div><div class="et-bar"><i style="width:${tot?esc(Math.round(v/tot*100)):0}%"></i></div></div>`).join('')||'<p style="color:var(--muted);font-size:.78rem;">No entries.</p>'}
   ${people.length>1?`<div style="margin-top:8px;font-size:.76rem;"><b>By person</b>${people.map(e=>`<div class="et-row"><span style="flex:1">${escapeHtml(etName(e))}</span><b>${esc(etMoney(es.filter(x=>(x.spent_by||t.user_email).toLowerCase()===e.toLowerCase()).reduce((a,x)=>a+Number(x.amount),0),t.currency))}</b></div>`).join('')}</div>`:''}</div>
-  <div class="card"><div class="section-title" style="font-size:1rem;">🗓️ Entries</div>${Object.keys(byDate).sort().reverse().map(d=>`<div style="font-size:.68rem;color:var(--muted);margin-top:8px;font-weight:800;">${esc(d)}</div>${byDate[d].map(e=>`<div class="et-row" data-ifx-k="e${esc(e.id)}" data-ifx-amt="${esc(e.amount)}" data-ifx-cur="${esc(t.currency)}" data-ifx-label="${esc(e.category+(e.note?' · '+e.note:''))}" data-ifx-date="${esc(e.entry_date)}"><span>${esc(etIcon(e.category))}</span><span style="flex:1;min-width:0;">${escapeHtml(e.category)}${e.note?'<small style="color:var(--muted)"> · '+escapeHtml(e.note)+'</small>':''}${people.length>1?'<small style="color:var(--muted)"> · '+escapeHtml(etName(e.spent_by||t.user_email))+'</small>':''}</span><b>${esc(Number(e.amount).toFixed(2))}</b><button class="btn-tiny ghost" onclick="delEtEntry(${esc(e.id)})">✕</button></div>`).join('')}`).join('')||'<p style="color:var(--muted);font-size:.78rem;">No entries.</p>'}</div>`;
+  <div class="card"><div class="section-title" style="font-size:1rem;">🗓️ Entries</div>${Object.keys(byDate).sort().reverse().map(d=>`<div style="font-size:.68rem;color:var(--muted);margin-top:8px;font-weight:800;">${esc(d)}</div>${byDate[d].map(e=>`<div class="et-row" data-ifx-k="e${esc(e.id)}" data-ifx-amt="${esc(e.amount)}" data-ifx-cur="${esc(t.currency)}" data-ifx-label="${esc(e.category+(e.note?' · '+e.note:''))}" data-ifx-date="${esc(e.entry_date)}"><span>${esc(etIcon(e.category))}</span><span style="flex:1;min-width:0;">${escapeHtml(e.category)}${e.note?'<small style="color:var(--muted)"> · '+escapeHtml(e.note)+'</small>':''}${people.length>1?'<small style="color:var(--muted)"> · '+escapeHtml(etName(e.spent_by||t.user_email))+'</small>':''}</span><b>${esc(Number(e.amount).toFixed(2))}</b><button class="btn-tiny ghost" onclick="etEditEntry(${esc(e.id)})" aria-label="Edit">✏️</button><button class="btn-tiny ghost" onclick="delEtEntry(${esc(e.id)})" aria-label="Delete">✕</button></div>`).join('')}`).join('')||'<p style="color:var(--muted);font-size:.78rem;">No entries.</p>'}</div>`;
 }
 function etThisMonth(){const n=new Date();document.getElementById('et-start').value=localDateStr(new Date(n.getFullYear(),n.getMonth(),1));document.getElementById('et-end').value=localDateStr(new Date(n.getFullYear(),n.getMonth()+1,0));if(!document.getElementById('et-title').value)document.getElementById('et-title').value=n.toLocaleString('en',{month:'long',year:'numeric'});}
 function openEtModal(){

@@ -12,7 +12,7 @@
   var W = window, D = document;
   var BASE = [{ key: 'period', label: 'Monthly', icon: '📆', name: 'period tracker' }, { key: 'occasion', label: 'Events', icon: '🎟️', name: 'event tracker' }, { key: 'trip', label: 'Trips', icon: '✈️', name: 'trip tracker' }];
   W.etKinds = []; W.etKindsOk = true;
-  var NEED_SQL = 'Custom types need the v8.4 database upgrade (et_kinds). Run the UPGRADE sql from the setup guide, then try again.';
+  var NEED_SQL = 'Custom types need the v8.5 database upgrade (et_kinds). Run the UPGRADE sql from the setup guide, then try again.';
   var isMissing = function (e) { return e && (e.code === '42P01' || /et_kinds|relation|schema cache/i.test(e.message || '')); };
   var q = function (x) { return String(x == null ? '' : x); };
 

@@ -80,7 +80,7 @@
     var m = S.month, inc = S.income.filter(function (x) { return x.month === m; }), its = S.items.filter(function (x) { return x.month === m; });
     var head = '<div class="section-title">💰 Budget &amp; Salary Planner</div>' +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;"><button class="btn-tiny" data-act="m-" aria-label="Previous month">‹</button><b style="font-size:.95rem;">' + esc(monthLabel(m)) + '</b><button class="btn-tiny" data-act="m+" aria-label="Next month">›</button></div>' +
-      '<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">' + X.button('bp_income', 'Import / Export') + '</div>' +
+      '<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">' + X.button(S.tab==='budget'?'bp_items':S.tab==='goals'?'bp_goals':'bp_income', 'Import / Export / Template') + '</div>' +
       '<div class="ptabs">' + [['overview', '📊 Overview'], ['salary', '💼 Salary'], ['budget', '🎯 Budget'], ['goals', '🏆 Goals']].map(function (t) { return '<button class="ptab ' + (S.tab === t[0] ? 'on' : '') + '" data-act="tab" data-v="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>';
     root.innerHTML = head + (S.tab === 'overview' ? vOverview(inc, its) : S.tab === 'salary' ? vSalary(inc) : S.tab === 'budget' ? vBudget(its) : vGoals());
   }

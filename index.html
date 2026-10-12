@@ -13,7 +13,8 @@
 <link rel="icon" href="assets/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet"></noscript>
+<link rel="stylesheet" href="ifinex-ui.css">
 <script src="vendor/supabase.js"></script>
 <script src="ifinex-session.js"></script>
 <script src="ifinex-alerts.js"></script>
@@ -22,6 +23,7 @@
 <script defer src="vendor/xlsx.full.min.js"></script>
 <script defer src="ifinex-theme.js"></script>
 <script defer src="ifinex-tools.js"></script>
+<script defer src="ifinex-edit-plus.js"></script>
 <script defer src="ifinex-datasets-squad.js"></script>
 <style>
 :root {
@@ -543,7 +545,8 @@ let currentUser=null,selectedId=null,currentEmail='';
 async function applyMyAppearance(){
   try{
     const { data } = await sb.from('bill_user_prefs').select('*').ilike('user_email', currentEmail).maybeSingle();
-    if(data?.theme && data.theme!=='default') document.documentElement.setAttribute('data-theme', data.theme);
+    if(data?.theme && data.theme!=='default') document.documentElement.setAttribute('data-theme', data.theme); else if(data) document.documentElement.removeAttribute('data-theme');
+    try{ localStorage.setItem('ifx_theme', (data&&data.theme)||'default'); }catch(e){}
     if(data?.bg_url){ ifxBg.apply({url:data.bg_url,opacity:data.bg_opacity,zoom:data.bg_zoom,x:data.bg_x,y:data.bg_y}); }
   }catch(e){ /* appearance is cosmetic — never block the app over it */ }
 }
@@ -569,7 +572,7 @@ const IMPERSONATE_PARAM = new URLSearchParams(location.search).get('as');
 // expenses, prev_balances, settlements, members_config
 
 // ── INIT ────────────────────────────────────
-window.onload=async()=>{
+async function ifxBoot(){   // v8.6: runs at DOMContentLoaded — no longer waits for fonts/images (window.onload did, which kept the splash up on a slow network)
  try{
   if(SUPABASE_URL!=='YOUR_SUPABASE_URL'){
     // Explicit, matching auth config — MUST equal bill-tracker.html's so a
@@ -581,7 +584,6 @@ window.onload=async()=>{
       isDemoMode=false;
     }catch(e){isDemoMode=true;}
   }
-  try{ await loadMembers(); }catch(e){}  // v8.1: private now — this only succeeds for an already signed-in visitor
   buildOTPBoxes();
   // Security: never trust a cached "who's logged in" blob on its own — a
   // stale copy could show wrong admin status if permissions changed since.
@@ -590,15 +592,23 @@ window.onload=async()=>{
   if(!isDemoMode&&sb){
     // v8.3 persistent login — see ifinex-session.js
     ifxBootSplash('Restoring your session…');
-    const R = await ifxRestoreSession(sb);
+    const _ce=ifxCachedEmail(); let _hc=false; try{ _hc=!!(_ce && JSON.parse(localStorage.getItem('ifx_sqcache_'+_ce)||'null')); }catch(e){}
+    const R = await ifxRestoreSession(sb, _hc && !IMPERSONATE_PARAM ? 2500 : 0);   // v8.6: slow network + cached squad = open from cache after 2.5 s
     if(R.session?.user?.email){
       currentEmail=R.session.user.email.toLowerCase();
       applyMyAppearance();
+      try{
+        const c=JSON.parse(localStorage.getItem('ifx_sqcache_'+currentEmail)||'null');
+        if(c && c.user && Array.isArray(c.members) && c.members.length && !IMPERSONATE_PARAM){
+          MEMBERS=c.members; currentUser=c.user; selectedId=c.user.id; window._fastEntered=true; ifxBootHide(); enterApp().catch(e=>console.warn('load',e)); routeAfterLogin(true).catch(e=>console.warn('refresh',e)); return;
+        }
+      }catch(e){ console.warn('fast path skipped',e); }
       try{ await routeAfterLogin(true); ifxBootHide(); }
       catch(e){ console.warn('Enter failed',e); ifxBootOffline(()=>location.reload(), e&&e.message); }
       return;
     }
     if(R.offline){ ifxBootOffline(()=>location.reload(), R.error&&R.error.message); return; }
+    try{ await loadMembers(); }catch(e){}
     ifxBootHide();
     sessionStorage.removeItem('sq_user'); // no live session — any old cache is meaningless
     return;
@@ -609,7 +619,8 @@ window.onload=async()=>{
  }catch(e){
    console.error('Startup error:', e); try{ ifxBootOffline(()=>location.reload(), e&&e.message); }catch(x){}
  }
-};
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',ifxBoot); else ifxBoot();
 
 // ── MEMBER CONFIG — persisted in Supabase OR localStorage ──
 async function loadMembers(){
@@ -628,11 +639,15 @@ async function saveMembers(){
   localStorage.setItem('sq_members_v2',JSON.stringify(MEMBERS));
   if(!isDemoMode&&sb){
     try{
-      await sb.from('members_config').delete().neq('id','__none__');
-      await sb.from('members_config').insert(MEMBERS.map((m,i)=>({
-        id:m.id,name:m.name,email:m.email||'',emoji:m.emoji,
-        color:m.color,is_admin:m.isAdmin||false,sort_order:i
-      })));
+      // v8.5: write the new list FIRST (upsert by id), then remove only the rows that are no longer in it — a failed save can no longer leave the squad empty
+      const rows=MEMBERS.map((m,i)=>({id:m.id,name:m.name,email:m.email||'',emoji:m.emoji,color:m.color,is_admin:m.isAdmin||false,sort_order:i}));
+      const up=await sb.from('members_config').upsert(rows,{onConflict:'id'});
+      if(up.error) throw up.error;
+      if(rows.length){
+        const keep=rows.map(r=>'"'+String(r.id).replace(/["\\]/g,'')+'"').join(',');
+        const del=await sb.from('members_config').delete().not('id','in','('+keep+')');
+        if(del.error) throw del.error;
+      }
     }catch(e){console.log('members_config save err',e);}
   }
 }
@@ -752,7 +767,9 @@ async function routeAfterLogin(silent){
   // squad_split — find their matching squad roster entry by email.
   const m=MEMBERS.find(x=>(x.email||'').toLowerCase()===routeEmail.toLowerCase());
   if(!m){
-    if(!silent)showErr('err3','⚠️ Marked as a squad member but not yet on the squad roster — ask your admin to add you in Members, or use the My Tracker link for your personal tracker.');
+    // v8.6: never fail silently (the old silent=true path just showed the login picker and looked like "Squad Split does not open")
+    ifxBootHide(); showStep(3);
+    showErr('err3','⚠️ Marked as a squad member but not yet on the squad roster — ask your admin to add you in Members, or use the My Tracker link for your personal tracker.');
     return;
   }
   selectedId=m.id;
@@ -769,6 +786,8 @@ function finishLogin(){
   currentUser={...m};
   if(window._viewingAsDelegate) currentUser._delegatedLabel = window._viewingAsDelegate;
   sessionStorage.setItem('sq_user',JSON.stringify(currentUser));
+  try{ localStorage.setItem('ifx_sqcache_'+currentEmail, JSON.stringify({user:currentUser,members:MEMBERS})); }catch(e){}
+  if(window._fastEntered){ window._fastEntered=false; return; }   // v8.4: app already open from cache — cache refreshed, nothing more to do
   clearInterval(timerInterval);enterApp();
 }
 
@@ -856,6 +875,7 @@ async function logout(){
   if(!confirm('Log out?'))return;
   try{ if(typeof ifxAlertsDisable==='function') await ifxAlertsDisable(true,true); }catch(e){}
   try{ if(sb) await sb.auth.signOut(); }catch(e){ console.warn('signOut',e); }
+  try{ Object.keys(localStorage).filter(k=>k.indexOf('ifx_sqcache_')===0).forEach(k=>localStorage.removeItem(k)); }catch(e){}
   sessionStorage.removeItem('sq_user');currentUser=null;
   document.getElementById('screen-app').classList.remove('active');
   document.getElementById('screen-login').classList.add('active');
@@ -1202,7 +1222,7 @@ async function recordSettlement(){
     entry.id=Date.now();entry.created_at=new Date().toISOString();settlements.push(entry);
   }
   document.getElementById('settle-amount').value='';
-  showToast(`✅ Settlement recorded! <span class="dhs"><svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg"><path d="M5,5 L5,115 L45,115 C80,115 100,90 100,60 C100,30 80,5 45,5 Z M20,20 L43,20 C68,20 82,35 82,60 C82,85 68,100 43,100 L20,100 Z"/><rect x="0" y="42" width="72" height="10" rx="2"/><rect x="0" y="62" width="72" height="10" rx="2"/></svg></span>${esc(amt)} from ${esc(MEMBERS.find(m=>m.id===from)?.name)} to ${esc(MEMBERS.find(m=>m.id===to)?.name)}`);
+  showToast(`✅ Settlement recorded! <span class="dhs"><svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg"><path d="M5,5 L5,115 L45,115 C80,115 100,90 100,60 C100,30 80,5 45,5 Z M20,20 L43,20 C68,20 82,35 82,60 C82,85 68,100 43,100 L20,100 Z"/><rect x="0" y="42" width="72" height="10" rx="2"/><rect x="0" y="62" width="72" height="10" rx="2"/></svg></span>${esc(amt)} from ${esc(MEMBERS.find(m=>m.id===from)?.name)} to ${esc(MEMBERS.find(m=>m.id===to)?.name)}`,true);
   refresh();
 }
 
@@ -1477,10 +1497,10 @@ async function adminAddPrevBal(){
 }
 
 // ── TOAST ─────────────────────────────────────
-function showToast(msg){
+function showToast(msg,trustedHtml){   // v8.5: text by default; HTML only when the caller passes a template it built itself (every value in it is esc()'d)
   const t=document.createElement('div');
   t.style.cssText='position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#6bcb77;color:#0b1a0e;padding:10px 20px;border-radius:12px;font-weight:800;font-size:.88rem;z-index:999;animation:slideUp .3s ease;white-space:nowrap;';
-  t.textContent=msg;document.body.appendChild(t);
+  if(trustedHtml)t.innerHTML=msg;else t.textContent=msg;document.body.appendChild(t);
   setTimeout(()=>t.remove(),2800);
 }
 

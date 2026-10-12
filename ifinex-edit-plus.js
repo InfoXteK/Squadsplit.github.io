@@ -57,7 +57,7 @@
       ], { validate: function (v) { return !(parseFloat(v.amount) > 0) ? 'Amount must be above 0' : null; } });
       if (!v) return;
       var r = await sb.from('bill_settlements').update({ amount: parseFloat(v.amount), month: v.month }).eq('id', id);
-      if (r.error) return toast('❌ ' + (/policy|permission|denied/i.test(r.error.message) ? 'Database needs the v8.4 upgrade SQL (settlement edit policy)' : r.error.message));
+      if (r.error) return toast('❌ ' + (/policy|permission|denied/i.test(r.error.message) ? 'Database needs the v8.5 upgrade SQL (settlement edit policy)' : r.error.message));
       toast('Payment updated ✓'); await loadMyData(); try { renderHome(); } catch (e) {}
     };
 

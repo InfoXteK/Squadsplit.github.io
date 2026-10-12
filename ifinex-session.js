@@ -17,6 +17,7 @@
 (function () {
   'use strict';
   var W = window;
+  try { var _t = localStorage.getItem('ifx_theme'); if (_t && _t !== 'default') document.documentElement.setAttribute('data-theme', _t); } catch (e) {}   // no flash of the wrong theme on open
   var KEY = 'squadsplit-auth-v1';           // legacy name kept on purpose: renaming would log everybody out
   var IDB_NAME = 'ifinex-auth', IDB_STORE = 'kv';
 
@@ -93,7 +94,7 @@
     var el = document.getElementById('ifx-boot');
     if (!el) {
       el = document.createElement('div'); el.id = 'ifx-boot';
-      el.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#0b0b18;color:#e8ecff;font-family:Nunito,system-ui,sans-serif;text-align:center;padding:24px;';
+      el.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#0b0b18;color:#e8ecff;font-family:Nunito,system-ui,sans-serif;text-align:center;padding:24px;opacity:0;animation:ifxin .25s ease .45s forwards;';
       document.body.appendChild(el);
     }
     el.innerHTML = html; return el;
@@ -102,7 +103,7 @@
   W.ifxBootSplash = function (msg) {
     overlay('<img src="assets/ifinex-emblem-192.png" alt="" style="width:92px;height:92px;border-radius:50%;animation:ifxpulse 1.3s ease-in-out infinite;">' +
       '<div style="font-weight:800;font-size:.95rem;">' + (msg || 'Restoring your session…') + '</div>' +
-      '<style>@keyframes ifxpulse{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.08);opacity:1}}</style>');
+      '<style>@keyframes ifxpulse{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.08);opacity:1}}@keyframes ifxin{to{opacity:1}}</style>');
   };
   W.ifxBootOffline = function (retry, why) {
     var el = overlay('<img src="assets/ifinex-emblem-192.png" alt="" style="width:80px;height:80px;border-radius:50%;opacity:.8;">' +
@@ -115,7 +116,21 @@
   };
 
   // Returns { session } | { none:true } | { offline:true, error }
-  W.ifxRestoreSession = async function (sb) {
+  // v8.6: e-mail inside the stored token (sync, localStorage only) — lets the pages open from their cache while the network wakes up
+  W.ifxCachedEmail = function () {
+    try { var t = JSON.parse(localStorage.getItem(KEY) || 'null'); var e = t && t.user && t.user.email; return e ? String(e).toLowerCase() : null; } catch (x) { return null; }
+  };
+  // softMs > 0 = the caller HAS a cached profile: if the real restore takes longer than softMs we answer {session:{user:{email}},soft:true}
+  // right away (the page opens from its cache) and keep restoring in the background; if that finally says "really logged out" we reload to the login form.
+  W.ifxRestoreSession = function (sb, softMs) {
+    var real = restoreReal(sb), ce = W.ifxCachedEmail();
+    if (!(softMs > 0) || !ce) return real;
+    return Promise.race([real, sleep(softMs).then(function () {
+      real.then(function (r) { if (r && r.none) { try { location.reload(); } catch (e) {} } });
+      return { session: { user: { email: ce } }, soft: true };
+    })]);
+  };
+  async function restoreReal(sb) {
     var lastErr = null;
     for (var attempt = 0; attempt < 4; attempt++) {
       try {
@@ -137,5 +152,5 @@
       }
     }
     return { offline: true, error: lastErr };
-  };
+  }
 })();
