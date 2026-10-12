@@ -17,7 +17,6 @@
 (function () {
   'use strict';
   var W = window;
-  try { var _t = localStorage.getItem('ifx_theme'); if (_t && _t !== 'default') document.documentElement.setAttribute('data-theme', _t); } catch (e) {}   // no flash of the wrong theme on open
   var KEY = 'squadsplit-auth-v1';           // legacy name kept on purpose: renaming would log everybody out
   var IDB_NAME = 'ifinex-auth', IDB_STORE = 'kv';
 
@@ -94,7 +93,7 @@
     var el = document.getElementById('ifx-boot');
     if (!el) {
       el = document.createElement('div'); el.id = 'ifx-boot';
-      el.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#0b0b18;color:#e8ecff;font-family:Nunito,system-ui,sans-serif;text-align:center;padding:24px;opacity:0;animation:ifxin .25s ease .45s forwards;';
+      el.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#0b0b18;color:#e8ecff;font-family:Nunito,system-ui,sans-serif;text-align:center;padding:24px;';
       document.body.appendChild(el);
     }
     el.innerHTML = html; return el;
@@ -103,7 +102,7 @@
   W.ifxBootSplash = function (msg) {
     overlay('<img src="assets/ifinex-emblem-192.png" alt="" style="width:92px;height:92px;border-radius:50%;animation:ifxpulse 1.3s ease-in-out infinite;">' +
       '<div style="font-weight:800;font-size:.95rem;">' + (msg || 'Restoring your session…') + '</div>' +
-      '<style>@keyframes ifxpulse{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.08);opacity:1}}@keyframes ifxin{to{opacity:1}}</style>');
+      '<style>@keyframes ifxpulse{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.08);opacity:1}}</style>');
   };
   W.ifxBootOffline = function (retry, why) {
     var el = overlay('<img src="assets/ifinex-emblem-192.png" alt="" style="width:80px;height:80px;border-radius:50%;opacity:.8;">' +

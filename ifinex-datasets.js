@@ -159,15 +159,13 @@
   });
 
   // 7) Expense Tracker: trackers + entries --------------------------------------------------
-  // tracker types: built-ins + your own (et_kinds); accepts the key or the label in Excel
-  var kindList = function () { return typeof etKindList === 'function' ? etKindList() : [{ key: 'period', label: 'Monthly' }, { key: 'occasion', label: 'Events' }, { key: 'trip', label: 'Trips' }]; };
-  var kindKey = function (v) { var s = low(v), k = kindList().find(function (x) { return low(x.key) === s || low(x.label) === s || (s === 'monthly' && x.key === 'period') || (s === 'event' && x.key === 'occasion') || (s === 'trip' && x.key === 'trip'); }); return k ? k.key : null; };
-  var kindLabel = function (k) { var x = kindList().find(function (y) { return y.key === k; }); return x ? x.label : k; };
+  var KIND = [{ v: 'period', l: 'monthly' }, { v: 'occasion', l: 'event' }, { v: 'trip', l: 'trip' }];
+  var kindLabel = function (k) { return (KIND.find(function (x) { return x.v === k; }) || { l: k }).l; };
   X.register({
     id: 'et_trackers', icon: '🧾', title: 'Expense trackers (monthly · event · trip)', file: 'expense-trackers',
     cols: [
       { k: 'title', label: 'Title', type: 'text', req: true, maxLen: 120, ex: 'Groceries October 2026' },
-      { k: 'kind', label: 'Kind', type: 'text', req: true, maxLen: 40, ex: 'Monthly', note: 'Monthly · Events · Trips or one of your own types' },
+      { k: 'kind', label: 'Kind', type: 'enum', enum: KIND, req: true, ex: 'monthly', note: 'monthly · event · trip' },
       { k: 'currency', label: 'Currency', type: 'text', maxLen: 12, def: 'AED', ex: 'AED' },
       { k: 'start_date', label: 'Start date', type: 'date', req: true, ex: '2026-10-01' },
       { k: 'end_date', label: 'End date', type: 'date', req: true, ex: '2026-10-31' },
@@ -175,10 +173,10 @@
       { k: 'total', label: 'Total spent (auto)', type: 'num', zero: true, exportOnly: true }
     ],
     rows: async function () { return etTrackers.map(function (t) { return { title: t.title, kind: kindLabel(t.kind), currency: t.currency, start_date: t.start_date, end_date: t.end_date, notes: t.notes || '', total: etEntries.filter(function (e) { return e.tracker_id === t.id; }).reduce(function (a, e) { return a + Number(e.amount); }, 0) }; }); },
-    dupKey: function (r) { return [low(r.title), kindKey(r.kind) || low(r.kind), r.start_date].join('|'); },
-    check: function (r) { if (!kindKey(r.kind)) return 'Kind "' + r.kind + '" is not one of: ' + kindList().map(function (k) { return k.label; }).join(', '); return r.end_date < r.start_date ? 'End date is before start date' : null; },
+    dupKey: function (r) { return [low(r.title), r.kind === 'monthly' ? 'period' : (r.kind === 'event' ? 'occasion' : r.kind), r.start_date].join('|'); },
+    check: function (r) { return r.end_date < r.start_date ? 'End date is before start date' : null; },
     insert: async function (rows) {
-      return X.chunk(rows.map(function (r) { return { user_email: owner(), kind: kindKey(r.kind) || 'period', title: r.title, currency: String(r.currency || 'AED').toUpperCase().replace(/[<>"'&]/g, ''), start_date: r.start_date, end_date: r.end_date, participants: [], notes: r.notes || '', created_by_email: me.email }; }), 100, function (p) { return sb.from('et_trackers').insert(p); });
+      return X.chunk(rows.map(function (r) { return { user_email: owner(), kind: r.kind, title: r.title, currency: String(r.currency || 'AED').toUpperCase().replace(/[<>"'&]/g, ''), start_date: r.start_date, end_date: r.end_date, participants: [], notes: r.notes || '', created_by_email: me.email }; }), 100, function (p) { return sb.from('et_trackers').insert(p); });
     },
     after: async function () { await loadEt(); renderEt(); }
   });

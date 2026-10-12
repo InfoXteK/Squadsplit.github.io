@@ -14,7 +14,6 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="ifinex-ui.css">
 <script src="vendor/supabase.js"></script>
 <script src="ifinex-session.js"></script>
 <script src="ifinex-alerts.js"></script>
@@ -23,7 +22,6 @@
 <script defer src="vendor/xlsx.full.min.js"></script>
 <script defer src="ifinex-theme.js"></script>
 <script defer src="ifinex-tools.js"></script>
-<script defer src="ifinex-edit-plus.js"></script>
 <script defer src="ifinex-datasets-squad.js"></script>
 <style>
 :root {
@@ -545,8 +543,7 @@ let currentUser=null,selectedId=null,currentEmail='';
 async function applyMyAppearance(){
   try{
     const { data } = await sb.from('bill_user_prefs').select('*').ilike('user_email', currentEmail).maybeSingle();
-    if(data?.theme && data.theme!=='default') document.documentElement.setAttribute('data-theme', data.theme); else if(data) document.documentElement.removeAttribute('data-theme');
-    try{ localStorage.setItem('ifx_theme', (data&&data.theme)||'default'); }catch(e){}
+    if(data?.theme && data.theme!=='default') document.documentElement.setAttribute('data-theme', data.theme);
     if(data?.bg_url){ ifxBg.apply({url:data.bg_url,opacity:data.bg_opacity,zoom:data.bg_zoom,x:data.bg_x,y:data.bg_y}); }
   }catch(e){ /* appearance is cosmetic — never block the app over it */ }
 }
@@ -597,12 +594,6 @@ window.onload=async()=>{
     if(R.session?.user?.email){
       currentEmail=R.session.user.email.toLowerCase();
       applyMyAppearance();
-      try{
-        const c=JSON.parse(localStorage.getItem('ifx_sqcache_'+currentEmail)||'null');
-        if(c && c.user && Array.isArray(c.members) && c.members.length && !IMPERSONATE_PARAM){
-          MEMBERS=c.members; currentUser=c.user; selectedId=c.user.id; window._fastEntered=true; ifxBootHide(); enterApp().catch(e=>console.warn('load',e)); routeAfterLogin(true).catch(e=>console.warn('refresh',e)); return;
-        }
-      }catch(e){ console.warn('fast path skipped',e); }
       try{ await routeAfterLogin(true); ifxBootHide(); }
       catch(e){ console.warn('Enter failed',e); ifxBootOffline(()=>location.reload(), e&&e.message); }
       return;
@@ -778,8 +769,6 @@ function finishLogin(){
   currentUser={...m};
   if(window._viewingAsDelegate) currentUser._delegatedLabel = window._viewingAsDelegate;
   sessionStorage.setItem('sq_user',JSON.stringify(currentUser));
-  try{ localStorage.setItem('ifx_sqcache_'+currentEmail, JSON.stringify({user:currentUser,members:MEMBERS})); }catch(e){}
-  if(window._fastEntered){ window._fastEntered=false; return; }   // v8.4: app already open from cache — cache refreshed, nothing more to do
   clearInterval(timerInterval);enterApp();
 }
 
@@ -867,7 +856,6 @@ async function logout(){
   if(!confirm('Log out?'))return;
   try{ if(typeof ifxAlertsDisable==='function') await ifxAlertsDisable(true,true); }catch(e){}
   try{ if(sb) await sb.auth.signOut(); }catch(e){ console.warn('signOut',e); }
-  try{ Object.keys(localStorage).filter(k=>k.indexOf('ifx_sqcache_')===0).forEach(k=>localStorage.removeItem(k)); }catch(e){}
   sessionStorage.removeItem('sq_user');currentUser=null;
   document.getElementById('screen-app').classList.remove('active');
   document.getElementById('screen-login').classList.add('active');

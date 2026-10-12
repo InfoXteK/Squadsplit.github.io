@@ -16,6 +16,12 @@
   // ---------- shared styles ----------
   var st = D.createElement('style');
   st.textContent =
+    '.ifx-host{position:relative;padding-left:38px !important;}' +
+    '.ifx-cb{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:20px;height:20px;accent-color:#4D96FF;cursor:pointer;margin:0;z-index:2;}' +
+    '.ifx-host.ifx-on{outline:2px solid #4D96FF;outline-offset:-2px;background-image:linear-gradient(0deg,rgba(77,150,255,.12),rgba(77,150,255,.12));}' +
+    '#ifx-selbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(88px + env(safe-area-inset-bottom,0px));z-index:9000;width:min(560px,calc(100% - 20px));display:none;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-radius:16px;background:linear-gradient(135deg,rgba(25,32,70,.97),rgba(45,25,80,.97));border:1px solid rgba(120,160,255,.5);box-shadow:0 10px 30px rgba(0,0,0,.45);color:#fff;font-size:.8rem;}' +
+    '#ifx-selbar b.t{font-size:1rem;color:#FFD93D;}#ifx-selbar button{border:0;border-radius:9px;padding:7px 10px;font-weight:800;font-size:.7rem;cursor:pointer;background:rgba(255,255,255,.14);color:#fff;}' +
+    '#ifx-selbar button.p{background:linear-gradient(135deg,#4D96FF,#B06AFF);}' +
     '.ifx-xbtn{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--border,rgba(255,255,255,.2));background:var(--card2,rgba(255,255,255,.08));color:inherit;border-radius:12px;padding:8px 12px;font-weight:800;font-size:.74rem;cursor:pointer;}' +
     '#ifx-xfer{position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;}#ifx-xfer.open{display:flex;}' +
     '#ifx-xfer .box{width:min(640px,100%);max-height:92vh;overflow:auto;background:var(--card,#151528);color:var(--text,#e8ecff);border:1px solid var(--border,rgba(255,255,255,.15));border-radius:20px 20px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom,0px));}' +
@@ -102,13 +108,12 @@
   function picked() { return hosts().filter(function (el) { return sel.has(el.getAttribute('data-ifx-k')); }); }
   function recount() {
     var els = picked(), b = ensureBar();
-    D.body.classList.toggle('ifx-selecting', els.length > 0);
     if (!els.length) { if (b.style.display !== 'none') b.style.display = 'none'; lastHtml = ''; return; }
     var by = {}, n = els.length;
     els.forEach(function (el) { var c = el.getAttribute('data-ifx-cur') || 'AED'; by[c] = (by[c] || 0) + (parseFloat(el.getAttribute('data-ifx-amt')) || 0); });
     var tot = Object.keys(by).map(function (c) { return c + ' ' + fmt(by[c]); }).join(' + ');
-    var html = '<div class="sb-top"><span class="sb-cnt">' + n + '</span><span class="sb-lbl">selected</span><span class="sb-tot"><small>Total</small><b>' + esc(tot) + '</b></span><button class="sb-x" data-a="clear" aria-label="Clear selection">\u2715</button></div>' +
-      '<div class="sb-act"><button data-a="all">Select all</button><button data-a="xl" class="p">\u2B07 Excel</button><button data-a="pdf" class="p">\u2B07 PDF</button></div>';
+    var html = '<span><b>' + n + '</b> selected</span><span>Total <b class="t">' + esc(tot) + '</b></span><span style="flex:1"></span>' +
+      '<button data-a="all">Select all</button><button data-a="xl" class="p">Excel</button><button data-a="pdf" class="p">PDF</button><button data-a="clear">✕ Clear</button>';
     if (html !== lastHtml) { b.innerHTML = html; lastHtml = html; }
     b.style.display = 'flex';
   }
@@ -267,41 +272,6 @@
   function open(id) { if (!order.length) return toast('Nothing to import/export on this screen'); cur = DS[id] ? id : order[0]; parsed = null; modal().classList.add('open'); render(); }
   // a small button any screen can drop in:  ifxXfer.button('bills')  -> HTML string
   function button(id, label) { return '<button class="ifx-xbtn" onclick="ifxXfer.open(\'' + esc(id) + '\')">⇅ ' + esc(label || 'Import / Export') + '</button>'; }
-
-  // ======================================================================== 3) SHARED EDIT DIALOG
-  // ifxAsk(title, fields, {ok, validate, danger}) -> Promise<values|null>
-  // field = { k, label, type: text|number|date|select|checks|color|textarea, val, options:[[v,l]|v], ph, hint, min, max }
-  function ask(title, fields, o) {
-    o = o || {};
-    return new Promise(function (res) {
-      var ov = D.createElement('div');
-      ov.style.cssText = 'position:fixed;inset:0;z-index:9800;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;';
-      var st = 'width:100%;padding:11px;border-radius:12px;border:1px solid var(--border,rgba(255,255,255,.2));background:var(--card2,rgba(255,255,255,.06));color:var(--text,inherit);font-size:.9rem;box-sizing:border-box;';
-      var h = '<div role="dialog" aria-modal="true" style="width:min(520px,100%);background:var(--card,#151528);color:var(--text,#e8ecff);border:1px solid var(--border,rgba(255,255,255,.15));border-radius:22px 22px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom,0px));max-height:90vh;overflow:auto;box-sizing:border-box;"><h3 style="margin:0 0 6px;font-size:1.05rem;">' + esc(title) + '</h3>';
-      if (o.sub) h += '<div style="font-size:.72rem;color:var(--muted,#9aa3c7);margin-bottom:6px;">' + esc(o.sub) + '</div>';
-      fields.forEach(function (f, i) {
-        h += '<label style="font-size:.7rem;color:var(--muted,#9aa3c7);display:block;margin:10px 0 4px;">' + esc(f.label) + '</label>';
-        var op = function (x) { return Array.isArray(x) ? x : [x, x]; };
-        if (f.type === 'select') h += '<select data-i="' + i + '" style="' + st + '">' + (f.options || []).map(function (x) { x = op(x); return '<option value="' + esc(x[0]) + '"' + (String(x[0]) === String(f.val) ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join('') + '</select>';
-        else if (f.type === 'checks') h += '<div data-i="' + i + '" data-checks="1" style="max-height:150px;overflow:auto;border:1px solid var(--border,rgba(255,255,255,.2));border-radius:12px;padding:6px 8px;">' + ((f.options || []).map(function (x) { x = op(x); return '<label style="display:flex;gap:8px;align-items:center;padding:5px 0;font-size:.82rem;"><input type="checkbox" value="' + esc(x[0]) + '"' + ((f.val || []).indexOf(x[0]) >= 0 ? ' checked' : '') + '> ' + esc(x[1]) + '</label>'; }).join('') || '<small style="color:var(--muted)">Nothing to choose from</small>') + '</div>';
-        else if (f.type === 'textarea') h += '<textarea data-i="' + i + '" rows="3" style="' + st + '" placeholder="' + esc(f.ph || '') + '">' + esc(f.val == null ? '' : f.val) + '</textarea>';
-        else h += '<input data-i="' + i + '" type="' + (f.type || 'text') + '" ' + (f.type === 'number' ? 'step="0.01" inputmode="decimal" ' : '') + (f.min != null ? 'min="' + esc(f.min) + '" ' : '') + (f.max != null ? 'max="' + esc(f.max) + '" ' : '') + 'value="' + esc(f.val == null ? '' : f.val) + '" placeholder="' + esc(f.ph || '') + '" style="' + st + (f.type === 'color' ? 'height:44px;padding:4px;' : '') + '">';
-        if (f.hint) h += '<div style="font-size:.64rem;color:var(--muted,#9aa3c7);margin-top:3px;">' + esc(f.hint) + '</div>';
-      });
-      h += '<div data-err style="color:#FF6B6B;font-size:.76rem;margin-top:8px;min-height:1em;"></div><div style="display:flex;gap:8px;margin-top:8px;"><button data-x="no" style="flex:1;padding:12px;border-radius:12px;border:1px solid var(--border,rgba(255,255,255,.2));background:none;color:inherit;font-weight:800;">Cancel</button><button data-x="ok" style="flex:2;padding:12px;border:0;border-radius:12px;font-weight:900;color:#fff;background:' + (o.danger ? '#e5484d' : 'linear-gradient(135deg,#4D96FF,#B06AFF)') + ';">' + esc(o.ok || 'Save') + '</button></div></div>';
-      ov.innerHTML = h; D.body.appendChild(ov);
-      var done = function (v) { ov.remove(); res(v); };
-      function collect() { var out = {}; ov.querySelectorAll('[data-i]').forEach(function (el) { var f = fields[+el.getAttribute('data-i')]; out[f.k] = el.getAttribute('data-checks') ? Array.prototype.map.call(el.querySelectorAll('input:checked'), function (c) { return c.value; }) : (el.value || '').trim(); }); return out; }
-      ov.addEventListener('click', function (e) {
-        if (e.target === ov) return done(null);
-        var x = e.target.getAttribute && e.target.getAttribute('data-x'); if (x === 'no') return done(null);
-        if (x === 'ok') { var v = collect(), msg = null; fields.forEach(function (f) { if (!msg && f.req && (v[f.k] === '' || (Array.isArray(v[f.k]) && !v[f.k].length))) msg = f.label + ' is required'; }); if (!msg && o.validate) msg = o.validate(v); if (msg) { ov.querySelector('[data-err]').textContent = msg; return; } done(v); }
-      });
-      ov.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); ov.querySelector('[data-x=ok]').click(); } if (e.key === 'Escape') done(null); });
-      var first = ov.querySelector('input,select,textarea'); if (first) setTimeout(function () { try { first.focus(); } catch (e) {} }, 60);
-    });
-  }
-  W.ifxAsk = ask;
 
   W.ifxXfer = { register: register, reset: unregisterAll, open: open, close: close, button: button, tableXlsx: tableXlsx, tablePdf: tablePdf, saveBlob: saveBlob, coerce: coerce, fmt: fmt, esc: esc, stamp: stamp, chunk: async function (arr, n, fn) { for (var i = 0; i < arr.length; i += n) { var r = await fn(arr.slice(i, i + n)); if (r && r.error) return r; } return {}; } };
 })();
