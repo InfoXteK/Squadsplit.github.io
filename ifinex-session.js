@@ -18,7 +18,7 @@
   'use strict';
   var W = window;
   try { var _t = localStorage.getItem('ifx_theme'); if (_t && _t !== 'default') document.documentElement.setAttribute('data-theme', _t); } catch (e) {}   // no flash of the wrong theme on open
-  var KEY = 'squadsplit-auth-v1';           // legacy name kept on purpose: renaming would log everybody out
+  var KEY = (W.IFX_CFG && W.IFX_CFG.authKey) || 'squadsplit-auth-v1';   // v8.7: one storage name PER backend (the original project keeps the legacy name so nobody is logged out); a refresh token is never sent to a different server
   var IDB_NAME = 'ifinex-auth', IDB_STORE = 'kv';
 
   function prefs() {

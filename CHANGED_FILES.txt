@@ -1,0 +1,24 @@
+CHANGED (7):
+bill-tracker.html
+ifinex-session.js
+ifinex-ui.css
+ifinex-update.js
+ifinex-version.json
+index.html
+manifest.webmanifest
+
+NEW (11):
+ifinex-backup.js
+ifinex-config.js
+ifinex-config.json
+ifinex-connection.js
+ifinex-gdrive.js
+ifinex-settings.js
+ifinex-standalone.js
+ifinex-start.js
+squad.html
+start.html
+vendor/ifinex-local.js
+
+NO LONGER IN THE PROJECT (delete from GitHub if present) (0):
+

@@ -18,13 +18,15 @@
 /* ───────── 1. HEADER LOCKUP ───────── */
 .app-header{gap:8px!important;padding:8px 10px!important;align-items:center!important;}
 .app-header .hamb{flex:0 0 auto;}
-.app-header .hd-title{flex:0 1 auto!important;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:2px;}
-.app-header .hd-title h2{display:flex!important;align-items:center;gap:7px;margin:0;line-height:0;font-size:0;background:none!important;-webkit-text-fill-color:initial!important;}
+.app-header .hd-title{flex:0 0 auto!important;min-width:max-content!important;width:max-content;max-width:none!important;overflow:visible!important;display:flex;flex-direction:column;justify-content:center;gap:2px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.app-header .hd-title h2{display:flex!important;flex:none!important;width:max-content;overflow:visible!important;text-overflow:clip!important;white-space:nowrap;align-items:center;gap:7px;margin:0;line-height:0;font-size:0;background:none!important;-webkit-text-fill-color:initial!important;}
 .app-header .hd-logo,.app-header .hd-word{flex:none!important;display:block;margin:0!important;max-width:none!important;object-fit:contain;cursor:pointer;vertical-align:baseline!important;}
 .app-header .hd-logo{width:40px!important;height:40px!important;border-radius:50%;box-shadow:0 2px 10px rgba(77,150,255,.35);}
 .app-header .hd-word{height:30px!important;width:auto!important;aspect-ratio:520/166;border-radius:7px!important;}
 .app-header .hd-title p{margin:0!important;font-size:.6rem!important;line-height:1.1;max-width:min(52vw,240px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.app-header .header-right{flex:0 1 auto!important;min-width:0;gap:5px!important;margin-left:auto;}
+.app-header .header-right{flex:1 1 0!important;min-width:0;gap:5px!important;margin-left:auto;justify-content:flex-end;}
+.app-header .user-pill{min-width:0;flex:0 1 auto!important;}
+.app-header .hd-title *{pointer-events:none;}
 #me-name,#hdr-name{max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 @media (max-width:420px){
   .app-header{gap:6px!important;padding:7px 8px!important;}
@@ -35,7 +37,16 @@
   .app-header .hd-title p{display:none;}
   #me-name,#hdr-name{max-width:58px;}
 }
-@media (max-width:350px){ .app-header .hd-word{display:none!important;} }
+@media (max-width:350px){
+  .app-header{gap:4px!important;padding:6px 6px!important;}
+  .app-header .hamb{width:32px;height:32px;}
+  .app-header .hd-logo{width:28px!important;height:28px!important;}
+  .app-header .hd-word{height:21px!important;}
+  .app-header .hd-title h2{gap:4px;}
+  #me-name,#hdr-name,.app-header .uname{max-width:38px;}
+  .app-header .hide-sm{display:none!important;}
+  .app-header .switch-acct-btn{padding:6px 8px;}
+}
 
 /* ───────── 2. TICK-BOXES + SELECTION BAR ───────── */
 .ifx-host{position:relative;padding-left:52px!important;}

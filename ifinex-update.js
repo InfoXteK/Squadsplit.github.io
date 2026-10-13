@@ -1,11 +1,11 @@
-/* iFiNeX v8.6 — "Check for updates" (Settings ☰ → ⬆️ Check for updates)
+/* iFiNeX v8.7 — "Check for updates" (Settings ☰ → ⬆️ Check for updates)
    • Android app (cloud + offline editions): asks the native plugin IfinexUpdater, which looks at the newest GitHub Release of the repo that BUILDS the app,
      downloads the .apk, verifies it (same app, newer version, same signing certificate) and opens Android's install screen.
    • Browser / website: compares ifinex-version.json on the server with the version loaded in this tab and offers a reload.
    The JS never chooses a repo or a URL — that is fixed inside the app (see IfinexUpdatePlugin.java). Release notes are shown as plain text only. */
 (function (W, D) {
   'use strict';
-  var WEB_VER = '8.6';
+  var WEB_VER = '8.8';
   var LAST_KEY = 'ifx_upd_last', SEEN_KEY = 'ifx_upd_seen';
 
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { } return null; }

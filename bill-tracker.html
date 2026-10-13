@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>iFiNeX · Bill Tracker</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://lznnetxeklmdrykxtsbm.supabase.co; connect-src 'self' https://lznnetxeklmdrykxtsbm.supabase.co wss://lznnetxeklmdrykxtsbm.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'">
 <meta name="referrer" content="no-referrer">
-<!-- v8.1 SECURITY: the page may only talk to its own origin + your Supabase project (https://lznnetxeklmdrykxtsbm.supabase.co); a script injected by an attacker can no longer send your session anywhere else. -->
+<!-- SECURITY (v8.7): the line above is only the loose BASELINE (any https backend). ifinex-config.js adds a second policy that allows ONLY the one backend this install uses; browsers apply both, so the strictest wins: a script injected by an attacker cannot send your session anywhere else. -->
 <meta name="theme-color" content="#0b0b18">
 <meta name="application-name" content="iFiNeX">
 <link rel="manifest" href="manifest.webmanifest">
@@ -15,7 +15,9 @@
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet"></noscript>
 <link rel="stylesheet" href="ifinex-ui.css">
+<script src="ifinex-config.js"></script>
 <script src="vendor/supabase.js"></script>
+<script src="vendor/ifinex-local.js"></script>
 <script src="ifinex-session.js"></script>
 <script src="ifinex-alerts.js"></script>
 <!-- v7.3: report export libraries. Both are optional at runtime — the
@@ -27,6 +29,11 @@
 <script defer src="ifinex-theme.js"></script>
 <script defer src="ifinex-tools.js"></script>
 <script defer src="ifinex-edit-plus.js"></script>
+<script defer src="ifinex-standalone.js"></script>
+<script defer src="ifinex-connection.js"></script>
+<script defer src="ifinex-gdrive.js"></script>
+<script defer src="ifinex-backup.js"></script>
+<script defer src="ifinex-settings.js"></script>
 <script defer src="ifinex-update.js"></script>
 <script defer src="ifinex-datasets.js"></script>
 <script defer src="ifinex-budget.js"></script>
@@ -381,7 +388,7 @@ html{max-width:100%;overflow-x:hidden;}body{max-width:100%;overflow-x:visible;}
     <div class="login-logo">
       <img class="logo-img" src="assets/ifinex-emblem-192.png" alt="" width="104" height="104" style="width:104px;height:104px;border-radius:50%;">
       <img src="assets/ifinex-wordmark.png" alt="iFiNeX" style="width:230px;max-width:72%;display:block;margin:6px auto 0;border-radius:12px;"><h1 style="position:absolute;left:-9999px;">iFiNeX</h1>
-      <p>Plan · Track · Save · Grow<br><small style="opacity:.7">web v8.6 · app v2.2</small></p>
+      <p>Plan · Track · Save · Grow<br><small style="opacity:.7">web v8.8 · app v2.4</small></p>
     </div>
 
     <div class="error-msg" id="login-error"></div>
@@ -426,7 +433,7 @@ html{max-width:100%;overflow-x:hidden;}body{max-width:100%;overflow-x:visible;}
 <div class="screen" id="screen-app">
   <div class="app-header">
     <button class="hamb" onclick="openDrawer()" aria-label="Menu">☰</button>
-    <div class="hd-title"><h2><img class="hd-logo" src="assets/ifinex-emblem-192.png" alt="" width="38" height="38" onclick="switchPage('hub')"><img class="hd-word" src="assets/ifinex-wordmark.png" alt="iFiNeX" height="32" onclick="switchPage('hub')"></h2><p id="header-sub">Your private dashboard</p></div>
+    <div class="hd-title" onclick="try{closeDrawer()}catch(e){};switchPage('hub');window.scrollTo(0,0)" role="link" tabindex="0" title="Open iFiNeX Hub" style="cursor:pointer"><h2><img class="hd-logo" src="assets/ifinex-emblem-192.png" alt="" width="38" height="38"><img class="hd-word" src="assets/ifinex-wordmark.png" alt="iFiNeX" height="32"></h2><p id="header-sub">Your private dashboard</p></div>
     <div class="header-right">
       <div class="notif-wrap">
         <button class="notif-bell" onclick="toggleNotifPanel()" title="Notifications">🔔<span class="notif-badge" id="notif-badge"></span></button>
@@ -443,7 +450,7 @@ html{max-width:100%;overflow-x:hidden;}body{max-width:100%;overflow-x:visible;}
         </div>
       </div>
       <button class="switch-acct-btn" id="btn-switch-account" onclick="openSwitchAccount()" title="Switch account">🔀 <span class="hide-sm">Switch</span></button>
-      <div class="user-pill" onclick="logout()" title="Tap to log out">
+      <div class="user-pill" onclick="switchPage('hub');window.scrollTo(0,0)" title="Open iFiNeX Hub">
         <div class="av-sm" id="me-avatar" style="background:var(--accent4);"></div>
         <span class="uname" id="me-name"></span>
       </div>
@@ -457,7 +464,7 @@ html{max-width:100%;overflow-x:hidden;}body{max-width:100%;overflow-x:visible;}
     <button class="drawer-item" onclick="goModule('home')">🏠 Bill Tracker</button>
     <button class="drawer-item" onclick="goModule('et')">🧾 Expense Tracker</button>
     <button class="drawer-item" onclick="goModule('plans')">📅 EPP &amp; Gold Plans</button>
-    <a class="drawer-item" id="link-to-squad" href="index.html" style="display:none;">💸 Squad Split</a>
+    <a class="drawer-item" id="link-to-squad" href="squad.html" style="display:none;">💸 Squad Split</a>
     <div class="drawer-sec">Settings</div>
     <button class="drawer-item" onclick="closeDrawer();ifxXfer.open()">⇅ Import / Export (Excel &amp; PDF)</button>
     <button class="drawer-item" onclick="closeDrawer();openAppearance()">🎨 Theme &amp; background</button>
@@ -465,7 +472,7 @@ html{max-width:100%;overflow-x:hidden;}body{max-width:100%;overflow-x:visible;}
     <button class="drawer-item" id="btn-update" onclick="closeDrawer();ifxUpdate.open()">⬆️ Check for updates<span id="upd-dot"></span></button>
     <button class="drawer-item" id="btn-open-admin" style="display:none;" onclick="closeDrawer();openAdmin()">⚙️ Admin</button>
     <button class="drawer-item" onclick="closeDrawer();logout()">🚪 Log out</button>
-    <div id="ifx-ver" style="font-size:.64rem;color:var(--muted);text-align:center;padding:10px;">iFiNeX web v8.6 · app v2.2</div>
+    <div id="ifx-ver" style="font-size:.64rem;color:var(--muted);text-align:center;padding:10px;">iFiNeX web v8.8 · app v2.4</div>
   </aside>
 
   <!-- HOME -->
@@ -1097,14 +1104,14 @@ html{max-width:100%;overflow-x:hidden;}body{max-width:100%;overflow-x:visible;}
 
 <script>
 // ── CONFIG (same Supabase project as Squad Split) ──────────
-const SUPABASE_URL = 'https://lznnetxeklmdrykxtsbm.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6bm5ldHhla2xtZHJ5a3h0c2JtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MTIxMDMsImV4cCI6MjA4ODk4ODEwM30.cD_n9iCvTTkwgtwh2Qt8Ux9iJR2OfkgCutC2eif8JQo';
-// Explicit, matching auth config — MUST be identical in index.html so a
+const SUPABASE_URL = IFX_CFG.supabaseUrl;   // v8.7: comes from ifinex-config.js (website: ifinex-config.json next to the pages · app: the server you chose)
+const SUPABASE_KEY = IFX_CFG.supabaseKey;
+// Explicit, matching auth config — MUST be identical in squad.html so a
 // session started on either page is recognized on the other. A shared
 // custom storageKey makes that sharing intentional/explicit rather than
 // relying on both files independently computing the same default.
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'squadsplit-auth-v1', storage: window.IFX_AUTH_STORAGE }
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: IFX_CFG.authKey, storage: window.IFX_AUTH_STORAGE }
 });
 const CAT_ICONS = {food:'🍔',transport:'🚗',shopping:'🛍️',bills:'🧾',entertainment:'🎬',health:'💊',other:'📦'};
 const CARD_COLORS = ['#4d96ff','#ff6b6b','#ff92d0','#ffd93d','#6bcb77','#b06aff','#ff922b','#4dd0e1'];
@@ -1165,7 +1172,8 @@ function canManageOwed(){ return !!(me && (me.is_admin || iAmAdminDelegate)); }
 // any explanation — that "looks like" a login bug but is really an
 // unhandled crash. If something does go wrong, we log it and still show
 // the login form so the person isn't stuck looking at a blank page.
-async function ifxBoot(){   // v8.6: DOMContentLoaded, not window.onload (which waited for fonts/images)
+async function ifxBoot(){
+  if(window.IFX_CFG&&IFX_CFG.redirecting) return;   // v8.7: this page is being replaced by start.html   // v8.6: DOMContentLoaded, not window.onload (which waited for fonts/images)
   try{
     document.getElementById('add-date').value = localDateStr(new Date());
     document.getElementById('pe-date').value = localDateStr(new Date());
@@ -1185,7 +1193,7 @@ async function ifxBoot(){   // v8.6: DOMContentLoaded, not window.onload (which 
       try{
         const c = JSON.parse(ifxKeep.get('prof_'+currentEmail)||'null'), rem = getRememberedManaging();
         if(c && c.me && Array.isArray(c.options) && c.options.length){
-          const pick = c.options.find(o=>rem && o.email.toLowerCase()===rem.toLowerCase()) || (c.options.length===1 ? c.options[0] : null);
+          const pick = c.options.find(o=>o.email.toLowerCase()===currentEmail) || c.options[0];   // v8.8: ALWAYS open your own account (or the first delegated one if you have none); switching is only via the 🔀 Switch button
           if(pick){ window._accountOptions=c.options; me=c.me; iAmAdminDelegate=!!c.iAmAdminDelegate; managing=pick; enterApp(); tryEnter(true).catch(e=>console.warn('profile refresh',e)); return; }
         }
       }catch(e){ console.warn('fast path skipped', e); }
@@ -1279,7 +1287,6 @@ async function tryEnter(silent){
 
   if(delegated.length===0){
     managing = own;
-    rememberManaging(managing.email);
     await enterApp();
     return;
   }
@@ -1289,16 +1296,10 @@ async function tryEnter(silent){
   // every refresh (with no way back in without picking again) was the
   // actual bug; explicit "Switch account" in the header remains the way
   // to change it deliberately.
-  const remembered = getRememberedManaging();
-  const rememberedMatch = remembered && options.find(o=>o.email.toLowerCase()===remembered.toLowerCase());
-  if(rememberedMatch){
-    managing = rememberedMatch;
-    await enterApp();
-    return;
-  }
-  renderAccountList('pick-account-list', (i)=>{ chooseAccount(i); });
-  document.getElementById('step-otp').classList.remove('active');
-  document.getElementById('step-pick-account').classList.add('active');
+  // v8.8: no picker after login. Delegates open their OWN account (the Hub); someone who only has delegated access opens the first one.
+  // Anyone with more than one account uses the 🔀 Switch button when they want to change.
+  managing = own || delegated[0];
+  await enterApp();
 }
 // Persisted per-login-email so switching who's logged in (a different
 // email entirely) never accidentally carries over a stale "managing"
@@ -1400,9 +1401,9 @@ async function refreshManagingUI(){
     squadLink.style.display='inline-block';
     // Carries the managed identity across to Squad Split too, so a
     // delegate viewing a squad member's Bill Tracker sees that SAME
-    // member's Squad Split view, not their own (index.html verifies
+    // member's Squad Split view, not their own (squad.html verifies
     // this delegate relationship itself before honoring it).
-    squadLink.href = 'index.html?as=' + encodeURIComponent(managing.email);
+    squadLink.href = 'squad.html?as=' + encodeURIComponent(managing.email);
   } else {
     squadLink.style.display='none';
   }
@@ -1589,7 +1590,7 @@ function fillPayeeEmailDatalist(){
 const HUB_TILES=[
  ['Bill Tracker','bill','#FF9D4D','🧾','Bills, spend & who owes whom',()=>switchPage('home')],
  ['General Expense Tracker','expense','#FFD93D','🪙','Monthly / period trackers',()=>{etTab='period';switchPage('et');}],
- ['Squad Split','squad','#4DD0E1','👥','Split costs with the squad',()=>{location.href='index.html'+(managing&&me&&managing.email&&me.email&&managing.email.toLowerCase()!==me.email.toLowerCase()?'?as='+encodeURIComponent(managing.email):'');},()=>managing&&managing.group_type==='squad_split'],
+ ['Squad Split','squad','#4DD0E1','👥','Split costs with the squad',()=>{location.href='squad.html'+(managing&&me&&managing.email&&me.email&&managing.email.toLowerCase()!==me.email.toLowerCase()?'?as='+encodeURIComponent(managing.email):'');},()=>managing&&managing.group_type==='squad_split'],
  ['Shared Card Payment','card','#4DB8FF','💳','Cards, due dates, shared access',()=>switchPage('cards')],
  ['Budgeting Tools','budget','#6BCB77','📈','Budget, salary split & goals',()=>switchPage('budget')],
  ['Event Expense Tracker','event','#FF6B6B','🎟️','Weddings, parties, occasions',()=>{etTab='occasion';switchPage('et');}],
