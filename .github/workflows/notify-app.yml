@@ -1,0 +1,33 @@
+name: Tell the app repository that the website changed
+
+# OPTIONAL "instant" mode. Put this file into your WEBSITE repository (SquadSplit/Squadsplit.github.io) at  .github/workflows/notify-app.yml
+# Without it nothing is lost: the app repository checks the website by itself every 30 minutes.
+# With it: every push to the website starts "Sync website into the app" in the app repository within seconds -> APK build -> Release -> app shows "update available".
+#
+# One-time setup (Signing Key & Auto-Update Guide, Part 5):
+#   1. GitHub > your profile picture > Settings > Developer settings > Personal access tokens > Fine-grained tokens > Generate new token
+#      Resource owner: SquadSplit.  Repository access: Only select repositories -> iFiNeX-V2.4.0-Mobile.  Permissions > Repository > Actions: Read and write.
+#   2. Website repository > Settings > Secrets and variables > Actions > New repository secret:  Name APP_REPO_TOKEN, Secret = the token.
+on:
+  push:
+    branches: [ "main" ]
+    paths-ignore: [ "**.md", ".github/**" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Start the sync in the app repository
+        env:
+          GH_TOKEN: ${{ secrets.APP_REPO_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::notice::APP_REPO_TOKEN is not set - fine. The app repository will notice the change within 30 minutes by itself."
+            exit 0
+          fi
+          gh workflow run sync-web.yml --repo SquadSplit/iFiNeX-V2.4.0-Mobile --ref main
+          echo "Sync started in SquadSplit/iFiNeX-V2.4.0-Mobile"
