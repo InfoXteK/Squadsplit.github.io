@@ -29,5 +29,5 @@ jobs:
             echo "::notice::APP_REPO_TOKEN is not set - fine. The app repository will notice the change within 30 minutes by itself."
             exit 0
           fi
-          gh workflow run sync-web.yml --repo SquadSplit/iFiNeX-V2.4.0-Mobile --ref main
-          echo "Sync started in SquadSplit/iFiNeX-V2.4.0-Mobile"
+          gh workflow run sync-web.yml --repo SquadSplit/iFiNeX-Mobile --ref main
+          echo "Sync started in SquadSplit/iFiNeX-Mobile"
