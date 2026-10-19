@@ -6,7 +6,7 @@ name: Tell the app repository that the website changed
 #
 # One-time setup (Signing Key & Auto-Update Guide, Part 5):
 #   1. GitHub > your profile picture > Settings > Developer settings > Personal access tokens > Fine-grained tokens > Generate new token
-#      Resource owner: SquadSplit.  Repository access: Only select repositories -> iFiNeX-V2.4.0-Mobile.  Permissions > Repository > Actions: Read and write.
+#      Resource owner: SquadSplit.  Repository access: Only select repositories -> iFiNeX-Mobile.  Permissions > Repository > Actions: Read and write.
 #   2. Website repository > Settings > Secrets and variables > Actions > New repository secret:  Name APP_REPO_TOKEN, Secret = the token.
 on:
   push:
